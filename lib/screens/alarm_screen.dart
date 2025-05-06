@@ -1,16 +1,19 @@
 // lib/screens/intake_time_screen.dart
+import 'package:firstapp/screens/frequency_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../static/wavy_background.dart'; // ✅ Import
 import 'next_screen.dart';
+import 'date_screen.dart';
 
-class IntakeTimeScreen extends StatefulWidget {
-  const IntakeTimeScreen({super.key});
+class AlarmScreen extends StatefulWidget {
+  const AlarmScreen({super.key});
 
   @override
-  _IntakeTimeScreenState createState() => _IntakeTimeScreenState();
+  _AlarmScreenState createState() => _AlarmScreenState();
 }
 
-class _IntakeTimeScreenState extends State<IntakeTimeScreen> {
+class _AlarmScreenState extends State<AlarmScreen> {
   final _intakeTimes = <TimeOfDay?>[null, null, null];
   final _ampmValues = ['AM', 'AM', 'AM'];
   final _hourControllers = [
@@ -102,38 +105,41 @@ class _IntakeTimeScreenState extends State<IntakeTimeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true, // ✅ so the background goes under appbar
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FrequencyScreen())),
+          ),
         title: const Text('Intake Time'),
-        backgroundColor: Colors.lightBlue[50],
+        backgroundColor: Colors.transparent, // ✅ transparent appbar
         elevation: 0,
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter, end: Alignment.bottomCenter,
-            colors: [Color(0xFFE0F7FA), Color(0xFFF0F4C3)],
-          ),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildTimeInput(context, 0),
-              const SizedBox(height: 16),
-              _buildTimeInput(context, 1),
-              const SizedBox(height: 16),
-              _buildTimeInput(context, 2),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NextScreen()));
-                },
-                child: const Text('Next'),
+      body: Stack(
+        children: [
+          const WavyBackground(), // ✅ background painter
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildTimeInput(context, 0),
+                  const SizedBox(height: 16),
+                  _buildTimeInput(context, 1),
+                  const SizedBox(height: 16),
+                  _buildTimeInput(context, 2),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const DateScreen()));
+                    },
+                    child: const Text('Next'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
