@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import '../storage/profile_storage.dart';
 import '../static/app_sidebar.dart';
 import '../static/custom_date_picker.dart';
 import '../static/wavy_background.dart';
 import 'logs_screen.dart';
 import 'meds_screen.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,13 +23,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ────────────────────────────────────────────────────────────
   // Demo data (replace with your own provider / backend later)  
   // ────────────────────────────────────────────────────────────
-  String _name = 'John Doe';
-  String _address = '123 Main St,';
-  int _age = 30;
-  String _contactNumber = '555‑123‑4567';
-  String _emailAddress = 'john.doe@example.com';
-  DateTime _birthDate = DateTime(1993, 5, 15);
+  late String _name;
+  late String _address;
+  late int _age;
+  late String _contactNumber;
+  late String _emailAddress;
+  late DateTime _birthDate;
   late String _formattedBirthDate;
+  File? _avatarImage; // ← Add this line
 
   final List<Map<String, String>> _appointments = [];
   // ────────────────────────────────────────────────────────────
@@ -32,12 +38,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _formattedBirthDate = DateFormat('MMMM dd, yyyy').format(_birthDate);
+    _loadProfile();
   }
 
-  // ────────────────────────────────────────────────────────────
-  // Helpers                                                    
-  // ────────────────────────────────────────────────────────────
+  void _loadProfile() async {
+    final data = await ProfileStorage.loadProfile();
+    final appointments = await ProfileStorage.loadAppointments();
+
+    setState(() {
+      _name = data['name'];
+      _address = data['address'];
+      _age = data['age'];
+      _contactNumber = data['contact'];
+      _emailAddress = data['email'];
+      _birthDate = data['birthDate'];
+      _formattedBirthDate = DateFormat('MMMM dd, yyyy').format(_birthDate);
+      _appointments.clear();
+      _appointments.addAll(appointments); // ✅ load saved appointments
+    });
+  }
+
+  Future<void> _pickAvatarImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      // Save image to app directory
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = p.basename(picked.path);
+      final savedImage = await File(picked.path).copy('${appDir.path}/$fileName');
+
+      setState(() {
+        _avatarImage = savedImage;
+      });
+
+      // Save avatar path in profile storage
+      await ProfileStorage.saveProfile(
+        name: _name,
+        address: _address,
+        age: _age,
+        contact: _contactNumber,
+        email: _emailAddress,
+        birthDate: _birthDate,
+        avatarPath: savedImage.path, // ← save path
+      );
+    }
+  }
+
   void _editProfile() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -59,8 +106,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _contactNumber = result['contactNumber'] as String;
         _emailAddress = result['emailAddress'] as String;
         _birthDate = result['birthDate'] as DateTime;
-        _formattedBirthDate = DateFormat('MMMM dd, yyyy').format(_birthDate);
+        _formattedBirthDate = DateFormat('MMMM dd, yyyy').format(_birthDate);
       });
+
+      // ✅ Save the updated profile locally
+      await ProfileStorage.saveProfile(
+        name: _name,
+        address: _address,
+        age: _age,
+        contact: _contactNumber,
+        email: _emailAddress,
+        birthDate: _birthDate,
+      );
     }
   }
 
@@ -72,25 +129,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (result != null) {
       setState(() => _appointments.add(result));
+      await ProfileStorage.saveAppointments(_appointments); // ✅ persist the new list
     }
   }
 
-  // ────────────────────────────────────────────────────────────
-  // UI builders                                                
-  // ────────────────────────────────────────────────────────────
-  Widget _buildAppointmentCard(Map<String, String> appt) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Time: ${appt['time'] ?? 'N/A'}'),
-            Text('Date: ${appt['date'] ?? 'N/A'}'),
-            Text('Reason: ${appt['reason'] ?? 'N/A'}'),
-          ],
+  void _editAppointment(int index, Map<String, String> appt) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => EditAppointmentDialog(
+        appointment: appt,
+        index: index,
+      ),
+    );
+
+    if (result != null) {
+      if (result['delete'] == true) {
+        setState(() => _appointments.removeAt(index));
+      } else {
+        setState(() {
+          _appointments[index] = {
+            'time': result['time'],
+            'date': result['date'],
+            'reason': result['reason'],
+          };
+        });
+      }
+
+      await ProfileStorage.saveAppointments(_appointments);
+    }
+  }
+
+  Widget _buildAppointmentCard(Map<String, String> appt, int index) {
+    return GestureDetector(
+      onTap: () => _editAppointment(index, appt),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Time: ${appt['time'] ?? 'N/A'}'),
+              Text('Date: ${appt['date'] ?? 'N/A'}'),
+              Text('Reason: ${appt['reason'] ?? 'N/A'}'),
+            ],
+          ),
         ),
       ),
     );
@@ -124,11 +208,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
 
                     // ── avatar ────────────────────────────────
-                    const Center(
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundImage:
-                            NetworkImage('https://via.placeholder.com/100'),
+                    Center(
+                      child: GestureDetector(
+                        onTap: _pickAvatarImage,
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundImage: _avatarImage != null
+                              ? FileImage(_avatarImage!)
+                              : const NetworkImage('https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png') as ImageProvider,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -225,7 +313,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: Text('No appointments yet.'),
                             ),
-                          ..._appointments.map(_buildAppointmentCard),
+                          ..._appointments.asMap().entries.map(
+                              (entry) => _buildAppointmentCard(entry.value, entry.key),
+                            ),
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,
@@ -325,12 +415,27 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   @override
   void initState() {
     super.initState();
-    _nameC = TextEditingController(text: widget.name);
-    _addressC = TextEditingController(text: widget.address);
-    _ageC = TextEditingController(text: widget.age.toString());
-    _contactC = TextEditingController(text: widget.contactNumber);
-    _emailC = TextEditingController(text: widget.emailAddress);
-    _selectedDate = widget.birthDate;
+
+    // ✅ Initialize controllers first with empty strings (or defaults)
+    _nameC = TextEditingController();
+    _addressC = TextEditingController();
+    _ageC = TextEditingController();
+    _contactC = TextEditingController();
+    _emailC = TextEditingController();
+
+    _loadProfile(); // Then load the values into the controllers
+  }
+
+  void _loadProfile() async {
+    final data = await ProfileStorage.loadProfile();
+    setState(() {
+      _nameC.text = data['name'];
+      _addressC.text = data['address'];
+      _ageC.text = data['age'].toString();
+      _contactC.text = data['contact'];
+      _emailC.text = data['email'];
+      _selectedDate = data['birthDate'];
+    });
   }
 
   @override
@@ -346,9 +451,9 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   Future<void> _pickDate() async {
     final picked = await showCustomDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: DateTime.now(),
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: DateTime(2100),
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }
@@ -492,8 +597,8 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
     final picked = await showCustomDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
     );
     if (picked != null) setState(() => _date = picked);
   }
@@ -627,6 +732,156 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       ),
       child: Text(label,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+    );
+  }
+}
+
+class EditAppointmentDialog extends StatefulWidget {
+  final Map<String, String> appointment;
+  final int index;
+
+  const EditAppointmentDialog({
+    super.key,
+    required this.appointment,
+    required this.index,
+  });
+
+  @override
+  State<EditAppointmentDialog> createState() => _EditAppointmentDialogState();
+}
+
+class _EditAppointmentDialogState extends State<EditAppointmentDialog> {
+  late TimeOfDay _time;
+  late DateTime _date;
+  late TextEditingController _reasonC;
+
+  @override
+  void initState() {
+    super.initState();
+    _time = _parseTime(widget.appointment['time'] ?? '') ?? TimeOfDay.now();
+    _date = DateFormat('MMMM dd, yyyy').parse(widget.appointment['date']!);
+    _reasonC = TextEditingController(text: widget.appointment['reason']);
+  }
+
+  TimeOfDay? _parseTime(String formatted) {
+    try {
+      final time = DateFormat.jm().parse(formatted);
+      return TimeOfDay.fromDateTime(time);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _selectTime() async {
+    final picked = await showTimePicker(context: context, initialTime: _time);
+    if (picked != null) setState(() => _time = picked);
+  }
+
+  void _selectDate() async {
+    final picked = await showCustomDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
+  void _save() {
+    if (_reasonC.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a reason')));
+      return;
+    }
+
+    Navigator.of(context).pop({
+      'time': _time.format(context),
+      'date': DateFormat('MMMM dd, yyyy').format(_date),
+      'reason': _reasonC.text.trim(),
+      'index': widget.index.toString(),
+    });
+  }
+
+  void _delete() {
+    Navigator.of(context).pop({
+      'delete': true,
+      'index': widget.index.toString(),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: const Color(0xFFE0F7FA),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Edit Appointment',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: _selectTime,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: Center(child: Text(_time.format(context))),
+              ),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _selectDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: Center(
+                  child: Text(DateFormat('MMMM dd, yyyy').format(_date)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _reasonC,
+              decoration: const InputDecoration(
+                labelText: 'Reason',
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _delete,
+                  icon: const Icon(Icons.delete),
+                  label: const Text('Delete'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade400,
+                  ),
+                ),
+                const Spacer(),
+                ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF78AFC9),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -3,18 +3,21 @@ import 'package:flutter/material.dart';
 Future<DateTime?> showCustomDatePicker({
   required BuildContext context,
   required DateTime initialDate,
-  required DateTime firstDate,
+  required firstDate, // make optional
   required DateTime lastDate,
 }) {
+  final today = DateTime.now();
+  final validFirstDate = DateTime(today.year, today.month, today.day); // disables past days
+
   return showDatePicker(
     context: context,
-    initialDate: initialDate,
+    initialDate: initialDate.isBefore(validFirstDate) ? validFirstDate : initialDate,
     firstDate: firstDate,
     lastDate: lastDate,
     builder: (context, child) {
       return Theme(
         data: Theme.of(context).copyWith(
-          datePickerTheme: DatePickerThemeData(
+          datePickerTheme: const DatePickerThemeData(
             backgroundColor: Color(0xFFDBEFF5),
           ),
           colorScheme: const ColorScheme.light(

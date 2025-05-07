@@ -26,21 +26,20 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   final List<Map<String, String>> _medicines = [];
   final TextEditingController _searchController = TextEditingController();
 
-  void _addMedicine() {
-    setState(() {
-      _medicines.add({
-        'name': 'Medicine ${_medicines.length + 1}',
-        'brand': 'Brand',
-        'uses': 'Lorem ipsum',
-        'sideEffects': 'Lorem ipsum',
-        'activeIngredients': 'Lorem ipsum',
-        'directions': 'Lorem ipsum',
-        'warnings': 'Lorem ipsum',
-        'quantity': '',
-      });
-    });
+  @override
+  void initState() {
+    super.initState();
+    _medicines.addAll(List.generate(3, (i) => {
+      'name': 'Medicine ${i + 1}',
+      'brand': 'Brand',
+      'uses': 'Lorem ipsum',
+      'sideEffects': 'Lorem ipsum',
+      'activeIngredients': 'Lorem ipsum',
+      'directions': 'Lorem ipsum',
+      'warnings': 'Lorem ipsum',
+      'quantity': '',
+    }));
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -105,11 +104,6 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                   ),
                   const SizedBox(height: 20),
                   ..._medicines.map((m) => _buildMedicineCard(_medicines.indexOf(m))),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _addMedicine,
-                    child: const Text('Add Medicine'),
-                  ),
                 ],
               ),
             ),
@@ -152,53 +146,62 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       );
     }
 
+  Widget _buildInfoText(String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Text(
+        '$label: Lorem Ipsum',
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Colors.grey,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
   Widget _buildMedicineCard(int index) {
     return Card(
       elevation: 3,
       margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextFormField(
-              initialValue: _medicines[index]['name'],
-              decoration: const InputDecoration(labelText: 'Medicine Name'),
-              onChanged: (v) => _medicines[index]['name'] = v,
+            Text(
+              _medicines[index]['name'] ?? '',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-            const Text('Brand: Lorem ipsum'),
-            const Text('Uses: Lorem ipsum'),
-            const Text('Side Effects: Lorem ipsum'),
-            const Text('Active Ingredients: Lorem ipsum'),
-            const Text('Directions: Lorem ipsum'),
-            const Text('Warnings: Lorem ipsum'),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Input Quantity'),
-                    onChanged: (v) => _medicines[index]['quantity'] = v,
+            const SizedBox(height: 8),
+            _buildInfoText('Brand'),
+            _buildInfoText('Uses'),
+            _buildInfoText('Side Effects'),
+            _buildInfoText('Active Ingredients'),
+            _buildInfoText('Directions'),
+            _buildInfoText('Warnings'),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const FrequencyScreen()));
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  backgroundColor: Colors.lightBlue.shade200,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
+                  elevation: 0,
                 ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    if ((_medicines[index]['quantity'] ?? '').isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter a quantity.'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      return;
-                    }
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const FrequencyScreen()));
-                  },
-                  child: const Text('Add'),
-                ),
-              ],
+                child: const Text('Add', style: TextStyle(color: Colors.white)),
+              ),
             ),
           ],
         ),

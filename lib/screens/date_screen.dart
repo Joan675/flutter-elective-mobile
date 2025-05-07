@@ -18,9 +18,9 @@ class _DateScreenState extends State<DateScreen> {
   Future<void> _selectDate(BuildContext ctx) async {
     final picked = await showCustomDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }
