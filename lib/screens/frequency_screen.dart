@@ -1,6 +1,5 @@
 // lib/screens/frequency_screen.dart
 import 'package:firstapp/screens/add_medicine_screen.dart';
-import 'package:firstapp/screens/date_screen.dart';
 import 'package:flutter/material.dart';
 import '../static/wavy_background.dart';
 import 'alarm_screen.dart';

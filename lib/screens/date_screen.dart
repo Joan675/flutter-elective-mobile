@@ -33,7 +33,6 @@ class _DateScreenState extends State<DateScreen> {
   @override
   Widget build(BuildContext context) {
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    const fullDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
 
     return Scaffold(
       extendBodyBehindAppBar: true,

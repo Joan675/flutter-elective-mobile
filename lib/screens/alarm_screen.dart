@@ -3,7 +3,6 @@ import 'package:firstapp/screens/frequency_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../static/wavy_background.dart'; // ✅ Import
-import 'next_screen.dart';
 import 'date_screen.dart';
 
 class AlarmScreen extends StatefulWidget {
