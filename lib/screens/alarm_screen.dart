@@ -214,6 +214,14 @@ class _AlarmScreenState extends State<AlarmScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4DB1E3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 5,
+                      ),
                       onPressed: () {
                         final formattedTimes = List<String>.generate(_intakeTimes.length, (i) {
                           // If time was selected via picker, use it
@@ -246,13 +254,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
                       child: const Text(
                         'Next',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                   ),

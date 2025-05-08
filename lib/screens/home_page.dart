@@ -176,7 +176,7 @@ void _showDetailsDialog(BuildContext context, Map<String, dynamic> data) {
     return Scaffold(
       drawer: const AppSidebar(),
       appBar: AppBar(
-        backgroundColor: Colors.lightBlue[100],
+        backgroundColor: const Color(0xFF81D4FA),
         elevation: 0,
         title: const Text("Reminders"),
         iconTheme: const IconThemeData(color: Colors.black87),

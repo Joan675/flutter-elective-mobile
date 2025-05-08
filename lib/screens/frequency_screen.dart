@@ -47,13 +47,17 @@ class _FrequencyScreenState extends State<FrequencyScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF4DB1E3)),
+          icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 0, 0, 0)),
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AddMedicineScreen()),
             );
           },
+        ),
+        title: const Text(
+          "Frequency",
+          style: TextStyle(color: Colors.black),
         ),
       ),
       body: Stack(

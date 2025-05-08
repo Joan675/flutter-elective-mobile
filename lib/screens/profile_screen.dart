@@ -5,7 +5,6 @@ import '../static/app_sidebar.dart';
 import '../static/custom_date_picker.dart';
 import '../static/wavy_background.dart';
 import 'logs_screen.dart';
-import 'meds_screen.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -699,7 +698,7 @@ Widget build(BuildContext context) {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.check_circle, size: 18),
+                icon: const Icon(Icons.check_circle, size: 18, color: Colors.white),
                 onPressed: _save,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF78AFC9),
@@ -897,13 +896,15 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
               children: [
                 if (isEditMode)
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: ElevatedButton.icon(
                       onPressed: _delete,
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      label: const Text('Delete', style: TextStyle(color: Colors.red)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      icon: const Icon(Icons.delete),
+                      label: const Text('Delete'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
@@ -922,7 +923,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
                   ),
                 ),
               ],
-            ),
+            )
           ],
         ),
       ),

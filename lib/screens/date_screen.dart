@@ -54,8 +54,12 @@ class _DateScreenState extends State<DateScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.blueGrey),
+          icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 0, 0, 0)),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Days",
+          style: TextStyle(color: Colors.black),
         ),
       ),
       body: Stack(
@@ -162,11 +166,12 @@ class _DateScreenState extends State<DateScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueGrey,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: const Color(0xFF4DB1E3),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(50),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 5,
                       ),
                       onPressed: () async {
                         await MedicinePlanStorage.savePlan(
