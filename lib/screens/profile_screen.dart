@@ -337,17 +337,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Expanded(
                           child: _IconCardButton(
-                            icon: Icons.favorite,
-                            label: 'Meds',
-                            onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const MedsScreen())),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _IconCardButton(
                             icon: Icons.folder,
                             label: 'Logs',
                             onTap: () => Navigator.push(
@@ -433,12 +422,12 @@ class _IconCardButton extends StatelessWidget {
         color: const Color(0xFF78AFC9),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 28),
-          child: Column(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 32, color: Colors.white),
-              const SizedBox(height: 8),
+              const SizedBox(width: 15),
               Text(label,
                   style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),

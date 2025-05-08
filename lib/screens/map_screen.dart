@@ -8,6 +8,7 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 import '../services/nominatim_service.dart';
 import '../static/app_sidebar.dart';
 import '../services/directions_service.dart';
+import '../data/sample_pharmacies.dart';
 
 class Pharmacy {
   final String id;
@@ -53,38 +54,8 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _seedPharmacies();   // replace with API fetch if you have one
+    _pharmacies = List.from(samplePharmacies);
     _getCurrentLocation();
-  }
-
-  /* --------------- sample data --------------- */
-  void _seedPharmacies() {
-    _pharmacies = [
-      Pharmacy(
-        id: 'P001',
-        name: 'Saturn Drugstore',
-        address: '123 Main St',
-        contact: '0999‑888‑7777',
-        hours: '08:00‑21:00',
-        location: LatLng(14.5995, 120.9842),
-      ),
-      Pharmacy(
-        id: 'P002',
-        name: 'Sample Store',
-        address: '456 Avenue Rd',
-        contact: '0999‑111‑2222',
-        hours: '09:00‑18:00',
-        location: LatLng(14.6010, 120.9850),
-      ),
-      Pharmacy(
-        id: 'P003',
-        name: 'Sample Stpre',
-        address: '789 Street Ln',
-        contact: '0987‑654‑3210',
-        hours: '24/7',
-        location: LatLng(14.5980, 120.9820),
-      ),
-    ];
   }
 
   /* --------------- geolocation --------------- */
