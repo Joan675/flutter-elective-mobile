@@ -36,4 +36,20 @@ class ProfileStorage {
       'avatarPath': prefs.getString('avatarPath'), // ← add this
     };
   }
-}
+
+  static Future<void> saveAppointments(List<Map<String, String>> appointments) async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(appointments); // Convert to JSON string
+    await prefs.setString('appointments', encoded);
+  }
+
+  static Future<List<Map<String, String>>> loadAppointments() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('appointments');
+
+    if (jsonString == null) return [];
+    
+    final List decoded = jsonDecode(jsonString);
+    return List<Map<String, String>>.from(decoded);
+  }
+  }

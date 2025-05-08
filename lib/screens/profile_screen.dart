@@ -141,24 +141,97 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ────────────────────────────────────────────────────────────
-  // UI builders                                                
-  // ────────────────────────────────────────────────────────────
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Color(0xFF78AFC9)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                text: '$label: ',
+                style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+                children: [
+                  TextSpan(
+                    text: value,
+                    style: const TextStyle(fontWeight: FontWeight.normal, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAppointmentCard(Map<String, String> appt, int index) {
-    final prettyDate = DateFormat('MMMM dd, yyyy').format(DateTime.parse(appt['date']!)); // ← change ✔
+    final prettyDate = DateFormat('MMMM dd, yyyy').format(DateTime.parse(appt['date']!));
+    final time = appt['time'] ?? 'N/A';
+    final reason = appt['reason'] ?? 'No reason provided';
+
     return GestureDetector(
       onTap: () => _addAppointment(existingAppointment: appt, index: index),
       child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 8),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text('Time: ${appt['time'] ?? 'N/A'}'),
-              Text('Date: $prettyDate'),  
-              Text('Reason: ${appt['reason'] ?? 'N/A'}'),
+              // 📅 icon section
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF78AFC9).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.calendar_today, color: Color(0xFF78AFC9), size: 28),
+              ),
+              const SizedBox(width: 16),
+              // Text info section
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      prettyDate,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(time, style: const TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.notes, size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(reason, style: const TextStyle(color: Colors.black87)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Edit icon
+              Icon(Icons.edit, color: Colors.grey.shade600),
             ],
           ),
         ),
@@ -209,37 +282,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     // ── profile card ───────────────────────────
                     Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      color: Colors.white,
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(_name,
-                                style: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text('Address: $_address'),
-                            Text('Age: $_age'),
-                            Text('Contact: $_contactNumber'),
-                            Text('Email: $_emailAddress'),
-                            Text('Birth Date: $_formattedBirthDate'),
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
                             const SizedBox(height: 12),
+                            _buildDetailRow(Icons.home, 'Address', _address),
+                            _buildDetailRow(Icons.calendar_today, 'Age', '$_age'),
+                            _buildDetailRow(Icons.phone, 'Contact', _contactNumber),
+                            _buildDetailRow(Icons.email, 'Email', _emailAddress),
+                            _buildDetailRow(Icons.cake, 'Birth Date', _formattedBirthDate),
+                            const SizedBox(height: 16),
                             Align(
                               alignment: Alignment.centerRight,
-                              child: ElevatedButton(
+                              child: ElevatedButton.icon(
                                 onPressed: _editProfile,
+                                icon: const Icon(Icons.edit, size: 18),
+                                label: const Text('Edit Profile'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF78AFC9),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 8),
+                                  foregroundColor: Colors.white,
                                   shape: const StadiumBorder(),
-                                ),
-                                child: const Text(
-                                  'Edit Profile',
-                                  style: TextStyle(color: Colors.white),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                 ),
                               ),
                             ),
@@ -490,73 +560,102 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: const Color(0xFFE0F7FA),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildField('Name', _nameC),
-              const SizedBox(height: 10),
-              _buildField('Address', _addressC),
-              const SizedBox(height: 10),
-              _buildField('Age', _ageC, inputType: TextInputType.number),
-              const SizedBox(height: 10),
-              _buildField('Contact Number', _contactC,
-                  inputType: TextInputType.phone),
-              const SizedBox(height: 10),
-              _buildField('Email Address', _emailC,
-                  inputType: TextInputType.emailAddress),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Birth Date',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ),
-              const SizedBox(height: 4),
-              GestureDetector(
-                onTap: _pickDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade400),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(DateFormat('MMMM dd, yyyy').format(_selectedDate)),
-                      const Icon(Icons.calendar_today, size: 18),
-                    ],
+@override
+Widget build(BuildContext context) {
+  return Dialog(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    backgroundColor: Colors.white,
+    elevation: 8,
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Header ─────────────────────────────────────
+            Row(
+              children: const [
+                Icon(Icons.edit, color: Color(0xFF78AFC9)),
+                SizedBox(width: 8),
+                Text(
+                  'Edit Profile',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF78AFC9),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Save',
-                      style: TextStyle(color: Colors.white, fontSize: 18)),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // ── Input Fields ──────────────────────────────
+            _buildField('Name', _nameC),
+            const SizedBox(height: 12),
+            _buildField('Address', _addressC),
+            const SizedBox(height: 12),
+            _buildField('Age', _ageC, inputType: TextInputType.number),
+            const SizedBox(height: 12),
+            _buildField('Contact Number', _contactC, inputType: TextInputType.phone),
+            const SizedBox(height: 12),
+            _buildField('Email Address', _emailC, inputType: TextInputType.emailAddress),
+            const SizedBox(height: 12),
+
+            // ── Date Picker ───────────────────────────────
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Birth Date',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, color: Colors.grey[800])),
+            ),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade400),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      DateFormat('MMMM dd, yyyy').format(_selectedDate),
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                    const Icon(Icons.calendar_today, size: 18, color: Color(0xFF78AFC9)),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // ── Submit Button ─────────────────────────────
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.check_circle, size: 18),
+                onPressed: _save,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF78AFC9),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                ),
+                label: const Text('Save Changes',
+                    style: TextStyle(color: Colors.white, fontSize: 16)),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -641,101 +740,134 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
     final isAM = _time.period == DayPeriod.am;
     final hour = _time.hourOfPeriod.toString().padLeft(2, '0');
     final minute = _time.minute.toString().padLeft(2, '0');
-    final dateChip = DateFormat('MM/dd').format(_date);
+    final dateDisplay = DateFormat('MMMM dd, yyyy').format(_date);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: const Color(0xFFE0F7FA),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      elevation: 8,
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const Text('Appointment Date',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: _selectDate,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF78AFC9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(dateChip,
-                          style: const TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: _selectTime,
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text('Enter time'),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(hour,
-                              style: const TextStyle(
-                                  fontSize: 32, fontWeight: FontWeight.bold)),
-                          const Text(':', style: TextStyle(fontSize: 32)),
-                          Text(minute,
-                              style: const TextStyle(
-                                  fontSize: 32, fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 10),
-                          Column(
-                            children: [
-                              _ampmChip('AM', isAM),
-                              _ampmChip('PM', !isAM),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Title ───────────────────────────────────────────
+            Row(
+              children: const [
+                Icon(Icons.event, color: Color(0xFF78AFC9)),
+                SizedBox(width: 8),
+                Text(
+                  'Add Appointment',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _reasonC,
-                decoration: InputDecoration(
-                  labelText: 'Reason for Appointment',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // ── Date ────────────────────────────────────────────
+            const Text('Date',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: _selectDate,
+              child: Container(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF78AFC9),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child:
-                      const Text('Submit', style: TextStyle(color: Colors.white)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(dateDisplay, style: const TextStyle(fontSize: 15)),
+                    const Icon(Icons.calendar_today, size: 18, color: Color(0xFF78AFC9)),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ── Time ────────────────────────────────────────────
+            const Text('Time',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: _selectTime,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(hour,
+                        style: const TextStyle(
+                            fontSize: 32, fontWeight: FontWeight.bold)),
+                    const Text(':', style: TextStyle(fontSize: 32)),
+                    Text(minute,
+                        style: const TextStyle(
+                            fontSize: 32, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 16),
+                    Column(
+                      children: [
+                        _ampmChip('AM', isAM),
+                        _ampmChip('PM', !isAM),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ── Reason ──────────────────────────────────────────
+            const Text('Reason',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _reasonC,
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: 'E.g. Regular check-up',
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            // ── Submit Button ───────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _submit,
+                icon: const Icon(Icons.check),
+                label: const Text('Confirm Appointment'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF78AFC9),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
