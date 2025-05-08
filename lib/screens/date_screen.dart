@@ -2,9 +2,23 @@ import 'package:flutter/material.dart';
 import '../static/wavy_background.dart';
 import '../static/custom_date_picker.dart';
 import 'home_page.dart';
+import '../storage/medicine_plan_storage.dart'; // add this
+import '../models/medicine.dart';
 
 class DateScreen extends StatefulWidget {
-  const DateScreen({super.key});
+  final Medicine selectedMedicine;
+  final String frequency;
+  final String reminderDesc;
+  final List<String> intakeTimes;
+
+  const DateScreen({
+    super.key,
+    required this.selectedMedicine,
+    required this.frequency,
+    required this.reminderDesc,
+    required this.intakeTimes,
+  });
+
   @override
   _DateScreenState createState() => _DateScreenState();
 }
@@ -154,7 +168,17 @@ class _DateScreenState extends State<DateScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
+                        await MedicinePlanStorage.savePlan(
+                          medicineName: widget.selectedMedicine.name,
+                          medType: widget.selectedMedicine.medtype,
+                          frequency: widget.frequency,
+                          reminderDesc: widget.reminderDesc,
+                          intakeTimes: widget.intakeTimes,
+                          intakeDays: _selectedDays,
+                          startDate: _selectedDate.toIso8601String().split('T').first,
+                        );
+
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(builder: (_) => const HomePage()),

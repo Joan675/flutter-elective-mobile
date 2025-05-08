@@ -204,7 +204,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const FrequencyScreen()),
+                    MaterialPageRoute(builder: (_) => FrequencyScreen(selectedMedicine: m),),
                   );
                 },
                 style: ElevatedButton.styleFrom(

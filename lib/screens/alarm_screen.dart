@@ -3,19 +3,60 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../static/wavy_background.dart';
 import 'date_screen.dart';
+import '../models/medicine.dart';
 
 class AlarmScreen extends StatefulWidget {
-  const AlarmScreen({super.key});
+  final Medicine selectedMedicine;
+  final String frequency;
+  final String reminderDesc;
+
+  const AlarmScreen({
+    super.key,
+    required this.selectedMedicine,
+    required this.frequency,
+    required this.reminderDesc,
+  });
 
   @override
   _AlarmScreenState createState() => _AlarmScreenState();
 }
 
+
 class _AlarmScreenState extends State<AlarmScreen> {
-  final _intakeTimes = <TimeOfDay?>[null, null, null];
-  final _ampmValues = ['AM', 'AM', 'AM'];
-  final _hourControllers = List.generate(3, (_) => TextEditingController(text: '08'));
-  final _minuteControllers = List.generate(3, (_) => TextEditingController(text: '00'));
+  late List<TimeOfDay?> _intakeTimes;
+  late List<String> _ampmValues;
+  late List<TextEditingController> _hourControllers;
+  late List<TextEditingController> _minuteControllers;
+
+  int _getCardCountFromFrequency(String frequency) {
+    switch (frequency.toLowerCase()) {
+      case 'once a day':
+        return 1;
+      case 'twice a day':
+        return 2;
+      case 'three times a day':
+        return 3;
+      case 'four times a day':
+        return 4;
+      default:
+        return 1;
+    }
+  }
+
+  String _ordinalLabel(int i) {
+    const labels = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'];
+    return i < labels.length ? labels[i] : 'Intake ${i + 1}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    int cardCount = _getCardCountFromFrequency(widget.frequency);
+    _intakeTimes = List<TimeOfDay?>.filled(cardCount, null);
+    _ampmValues = List<String>.filled(cardCount, 'AM');
+    _hourControllers = List.generate(cardCount, (_) => TextEditingController(text: '08'));
+    _minuteControllers = List.generate(cardCount, (_) => TextEditingController(text: '00'));
+  }
 
   Future<void> _selectTime(BuildContext ctx, int i) async {
     final picked = await showTimePicker(
@@ -44,7 +85,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Time for ${['First', 'Second', 'Third'][i]} Intake',
+              'Time for ${_ordinalLabel(i)} Intake',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -145,7 +186,12 @@ class _AlarmScreenState extends State<AlarmScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FrequencyScreen())),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(
+            builder: (_) => FrequencyScreen(
+              selectedMedicine: widget.selectedMedicine,
+              ),
+            ),
+          ),
         ),
         title: const Text('Intake Time'),
         backgroundColor: Colors.transparent,
@@ -160,21 +206,54 @@ class _AlarmScreenState extends State<AlarmScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 12),
-                  _buildTimeInput(context, 0),
-                  _buildTimeInput(context, 1),
-                  _buildTimeInput(context, 2),
+                  ..._intakeTimes.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    return _buildTimeInput(context, i);
+                  }).toList(),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const DateScreen()));
+                        final formattedTimes = List<String>.generate(_intakeTimes.length, (i) {
+                          // If time was selected via picker, use it
+                          if (_intakeTimes[i] != null) {
+                            return _intakeTimes[i]!.format(context);
+                          }
+
+                          // Otherwise, parse manually from text fields + AM/PM
+                          int hour = int.tryParse(_hourControllers[i].text) ?? 8;
+                          int minute = int.tryParse(_minuteControllers[i].text) ?? 0;
+                          String ampm = _ampmValues[i];
+
+                          // Convert to 24-hour format
+                          if (ampm == 'PM' && hour < 12) hour += 12;
+                          if (ampm == 'AM' && hour == 12) hour = 0;
+
+                          final fallback = TimeOfDay(hour: hour, minute: minute);
+                          return fallback.format(context);
+                        });
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DateScreen(
+                              selectedMedicine: widget.selectedMedicine,
+                              frequency: widget.frequency,
+                              reminderDesc: widget.reminderDesc,
+                              intakeTimes: formattedTimes, // 👈 ensures all times are filled
+                            ),
+                          ),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Text('Next', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Next',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],

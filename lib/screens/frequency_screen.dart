@@ -2,16 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:firstapp/screens/add_medicine_screen.dart';
 import '../static/wavy_background.dart';
 import 'alarm_screen.dart';
+import '../models/medicine.dart';
 
 class FrequencyScreen extends StatefulWidget {
-  const FrequencyScreen({super.key});
+  final Medicine selectedMedicine;
+  final String? existingFrequency;
+  final String? existingReminder;
+
+    const FrequencyScreen({
+    super.key,
+    required this.selectedMedicine,
+    this.existingFrequency,
+    this.existingReminder,
+  });
 
   @override
   State<FrequencyScreen> createState() => _FrequencyScreenState();
 }
 
 class _FrequencyScreenState extends State<FrequencyScreen> {
-  String? _selectedFrequency = 'Three times a day';
+  String? _selectedFrequency;
   final TextEditingController _reminderDescriptionController = TextEditingController();
   final List<String> _frequencyOptions = [
     'Once a day',
@@ -19,6 +29,13 @@ class _FrequencyScreenState extends State<FrequencyScreen> {
     'Three times a day',
     'Four times a day',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFrequency = widget.existingFrequency ?? 'Three times a day';
+    _reminderDescriptionController.text = widget.existingReminder ?? '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +170,13 @@ class _FrequencyScreenState extends State<FrequencyScreen> {
                       elevation: 5,
                     ),
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AlarmScreen()));
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => AlarmScreen(
+                            selectedMedicine: widget.selectedMedicine,
+                            frequency: _selectedFrequency!,
+                            reminderDesc: _reminderDescriptionController.text,
+                          )
+                        )
+                      );
                     },
                     child: const Text(
                       'Next',
