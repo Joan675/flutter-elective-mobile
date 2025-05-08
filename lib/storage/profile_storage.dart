@@ -46,10 +46,14 @@ class ProfileStorage {
   static Future<List<Map<String, String>>> loadAppointments() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString('appointments');
+    if (jsonString == null || jsonString.isEmpty) return [];
 
-    if (jsonString == null) return [];
-    
-    final List decoded = jsonDecode(jsonString);
-    return List<Map<String, String>>.from(decoded);
+    final List<dynamic> decoded = jsonDecode(jsonString) as List<dynamic>;
+    return decoded.map<Map<String, String>>((dynamic item) {
+      final Map<String, dynamic> raw = item as Map<String, dynamic>;
+      return raw.map<String, String>(
+        (key, value) => MapEntry(key, value.toString()),
+      );
+    }).toList();
   }
-  }
+}

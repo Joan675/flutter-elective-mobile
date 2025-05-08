@@ -39,6 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadProfile();
+    _loadAppointments(); // ← Load separately
   }
 
   void _loadProfile() async {
@@ -56,6 +57,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (avatarPath != null && File(avatarPath).existsSync()) {
         _avatarImage = File(avatarPath);
       }
+    });
+  }
+
+  void _loadAppointments() async {
+    final loadedAppointments = await ProfileStorage.loadAppointments();
+    setState(() {
+      _appointments.clear();
+      _appointments.addAll(loadedAppointments);
     });
   }
 
@@ -124,9 +133,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _addAppointment({Map<String, String>? existingAppointment, int? index}) async {
     final result = await showDialog<Map<String, String>>(
-    context: context,
-    builder: (_) => AddAppointmentDialog(
-      initialData: existingAppointment,
+      context: context,
+      builder: (_) => AddAppointmentDialog(
+        initialData: existingAppointment,
       ),
     );
 
@@ -138,6 +147,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _appointments.add(result);
         }
       });
+
+      // Save after changes
+      await ProfileStorage.saveAppointments(_appointments);
     }
   }
 
