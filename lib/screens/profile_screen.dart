@@ -43,8 +43,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadProfile() async {
     final data = await ProfileStorage.loadProfile();
-    final appointments = await ProfileStorage.loadAppointments();
-
     setState(() {
       _name = data['name'];
       _address = data['address'];
@@ -53,8 +51,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _emailAddress = data['email'];
       _birthDate = data['birthDate'];
       _formattedBirthDate = DateFormat('MMMM dd, yyyy').format(_birthDate);
-      _appointments.clear();
-      _appointments.addAll(appointments); // ✅ load saved appointments
+
+      final avatarPath = data['avatarPath'] as String?;
+      if (avatarPath != null && File(avatarPath).existsSync()) {
+        _avatarImage = File(avatarPath);
+      }
     });
   }
 
@@ -129,52 +130,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (result != null) {
       setState(() => _appointments.add(result));
-      await ProfileStorage.saveAppointments(_appointments); // ✅ persist the new list
     }
   }
 
-  void _editAppointment(int index, Map<String, String> appt) async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (_) => EditAppointmentDialog(
-        appointment: appt,
-        index: index,
-      ),
-    );
-
-    if (result != null) {
-      if (result['delete'] == true) {
-        setState(() => _appointments.removeAt(index));
-      } else {
-        setState(() {
-          _appointments[index] = {
-            'time': result['time'],
-            'date': result['date'],
-            'reason': result['reason'],
-          };
-        });
-      }
-
-      await ProfileStorage.saveAppointments(_appointments);
-    }
-  }
-
-  Widget _buildAppointmentCard(Map<String, String> appt, int index) {
-    return GestureDetector(
-      onTap: () => _editAppointment(index, appt),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Time: ${appt['time'] ?? 'N/A'}'),
-              Text('Date: ${appt['date'] ?? 'N/A'}'),
-              Text('Reason: ${appt['reason'] ?? 'N/A'}'),
-            ],
-          ),
+  // ────────────────────────────────────────────────────────────
+  // UI builders                                                
+  // ────────────────────────────────────────────────────────────
+  Widget _buildAppointmentCard(Map<String, String> appt) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Time: ${appt['time'] ?? 'N/A'}'),
+            Text('Date: ${appt['date'] ?? 'N/A'}'),
+            Text('Reason: ${appt['reason'] ?? 'N/A'}'),
+          ],
         ),
       ),
     );
@@ -313,9 +287,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: Text('No appointments yet.'),
                             ),
-                          ..._appointments.asMap().entries.map(
-                              (entry) => _buildAppointmentCard(entry.value, entry.key),
-                            ),
+                          ..._appointments.map(_buildAppointmentCard),
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,
@@ -732,156 +704,6 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       ),
       child: Text(label,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-    );
-  }
-}
-
-class EditAppointmentDialog extends StatefulWidget {
-  final Map<String, String> appointment;
-  final int index;
-
-  const EditAppointmentDialog({
-    super.key,
-    required this.appointment,
-    required this.index,
-  });
-
-  @override
-  State<EditAppointmentDialog> createState() => _EditAppointmentDialogState();
-}
-
-class _EditAppointmentDialogState extends State<EditAppointmentDialog> {
-  late TimeOfDay _time;
-  late DateTime _date;
-  late TextEditingController _reasonC;
-
-  @override
-  void initState() {
-    super.initState();
-    _time = _parseTime(widget.appointment['time'] ?? '') ?? TimeOfDay.now();
-    _date = DateFormat('MMMM dd, yyyy').parse(widget.appointment['date']!);
-    _reasonC = TextEditingController(text: widget.appointment['reason']);
-  }
-
-  TimeOfDay? _parseTime(String formatted) {
-    try {
-      final time = DateFormat.jm().parse(formatted);
-      return TimeOfDay.fromDateTime(time);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  void _selectTime() async {
-    final picked = await showTimePicker(context: context, initialTime: _time);
-    if (picked != null) setState(() => _time = picked);
-  }
-
-  void _selectDate() async {
-    final picked = await showCustomDatePicker(
-      context: context,
-      initialDate: _date,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) setState(() => _date = picked);
-  }
-
-  void _save() {
-    if (_reasonC.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a reason')));
-      return;
-    }
-
-    Navigator.of(context).pop({
-      'time': _time.format(context),
-      'date': DateFormat('MMMM dd, yyyy').format(_date),
-      'reason': _reasonC.text.trim(),
-      'index': widget.index.toString(),
-    });
-  }
-
-  void _delete() {
-    Navigator.of(context).pop({
-      'delete': true,
-      'index': widget.index.toString(),
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: const Color(0xFFE0F7FA),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Edit Appointment',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: _selectTime,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.white,
-                ),
-                child: Center(child: Text(_time.format(context))),
-              ),
-            ),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _selectDate,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.white,
-                ),
-                child: Center(
-                  child: Text(DateFormat('MMMM dd, yyyy').format(_date)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _reasonC,
-              decoration: const InputDecoration(
-                labelText: 'Reason',
-                filled: true,
-                fillColor: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _delete,
-                  icon: const Icon(Icons.delete),
-                  label: const Text('Delete'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade400,
-                  ),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF78AFC9),
-                  ),
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -36,19 +36,4 @@ class ProfileStorage {
       'avatarPath': prefs.getString('avatarPath'), // ← add this
     };
   }
-
-    static Future<void> saveAppointments(List<Map<String, String>> appointments) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = jsonEncode(appointments);
-    await prefs.setString('appointments', jsonString);
-  }
-
-  static Future<List<Map<String, String>>> loadAppointments() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('appointments');
-    if (jsonString == null) return [];
-    final List<dynamic> decoded = jsonDecode(jsonString);
-    return decoded.cast<Map<String, String>>();
-  }
-
 }
