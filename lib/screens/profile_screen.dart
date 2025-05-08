@@ -122,33 +122,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _addAppointment() async {
+  void _addAppointment({Map<String, String>? existingAppointment, int? index}) async {
     final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (_) => const AddAppointmentDialog(),
+    context: context,
+    builder: (_) => AddAppointmentDialog(
+      initialData: existingAppointment,
+      ),
     );
 
     if (result != null) {
-      setState(() => _appointments.add(result));
+      setState(() {
+        if (index != null) {
+          _appointments[index] = result;
+        } else {
+          _appointments.add(result);
+        }
+      });
     }
   }
 
   // ────────────────────────────────────────────────────────────
   // UI builders                                                
   // ────────────────────────────────────────────────────────────
-  Widget _buildAppointmentCard(Map<String, String> appt) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Time: ${appt['time'] ?? 'N/A'}'),
-            Text('Date: ${appt['date'] ?? 'N/A'}'),
-            Text('Reason: ${appt['reason'] ?? 'N/A'}'),
-          ],
+  Widget _buildAppointmentCard(Map<String, String> appt, int index) {
+    final prettyDate = DateFormat('MMMM dd, yyyy').format(DateTime.parse(appt['date']!)); // ← change ✔
+    return GestureDetector(
+      onTap: () => _addAppointment(existingAppointment: appt, index: index),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Time: ${appt['time'] ?? 'N/A'}'),
+              Text('Date: $prettyDate'),  
+              Text('Reason: ${appt['reason'] ?? 'N/A'}'),
+            ],
+          ),
         ),
       ),
     );
@@ -287,7 +299,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: Text('No appointments yet.'),
                             ),
-                          ..._appointments.map(_buildAppointmentCard),
+                          ..._appointments.asMap().entries.map((entry) {
+                            return _buildAppointmentCard(entry.value, entry.key);
+                          }),
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,
@@ -549,17 +563,50 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 // Add Appointment Dialog (original with style tweaks)           
 // ──────────────────────────────────────────────────────────────
 class AddAppointmentDialog extends StatefulWidget {
-  const AddAppointmentDialog({super.key});
+  final Map<String, String>? initialData;
+
+  const AddAppointmentDialog({super.key, this.initialData});
 
   @override
   State<AddAppointmentDialog> createState() => _AddAppointmentDialogState();
 }
 
 class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
-  TimeOfDay _time = TimeOfDay.now();
-  DateTime _date = DateTime.now();
-  final TextEditingController _reasonC = TextEditingController();
+  late TimeOfDay _time;
+  late DateTime _date;
+  late TextEditingController _reasonC;
 
+  @override
+  void initState() {
+    super.initState();
+    _reasonC = TextEditingController();
+
+    // ✅ Default values
+    _time = TimeOfDay.now();
+    _date = DateTime.now();
+
+    if (widget.initialData != null) {
+      _reasonC.text = widget.initialData!['reason'] ?? '';
+
+      // ---- DATE ----
+      _date = DateTime.parse(widget.initialData!['date']!);   // ← change ✔
+
+      // ---- TIME ----
+      final rawTime  = widget.initialData!['time']!;
+      final parts    = rawTime.split(RegExp(r'[: ]'));
+      int   hour     = int.parse(parts[0]);
+      final minute   = int.parse(parts[1]);
+      final period   = parts[2].toUpperCase();
+      if (period == 'PM' && hour != 12) hour += 12;
+      if (period == 'AM' && hour == 12) hour = 0;
+      _time = TimeOfDay(hour: hour, minute: minute);
+    }
+
+    // ✅ Trigger rebuild to reflect the correct initial _date
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {});
+    });
+  }
   void _selectTime() async {
     final picked = await showTimePicker(context: context, initialTime: _time);
     if (picked != null) setState(() => _time = picked);
@@ -577,13 +624,14 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
 
   void _submit() {
     if (_reasonC.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a reason')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please enter a reason')));
       return;
     }
+
     Navigator.of(context).pop({
-      'time': _time.format(context),
-      'date': DateFormat('MMMM dd, yyyy').format(_date),
+      'time' : _time.format(context),
+      'date' : _date.toIso8601String(),   // ← change ✔
       'reason': _reasonC.text,
     });
   }
@@ -593,7 +641,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
     final isAM = _time.period == DayPeriod.am;
     final hour = _time.hourOfPeriod.toString().padLeft(2, '0');
     final minute = _time.minute.toString().padLeft(2, '0');
-    final dateChip = '${_date.month}/${_date.day}';
+    final dateChip = DateFormat('MM/dd').format(_date);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
