@@ -55,32 +55,37 @@ class _DateScreenState extends State<DateScreen> {
                 children: [
                   const Center(
                     child: Text(
-                      'Choose Specific Days',
+                      'Select Intake Days',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.blueGrey,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: List.generate(7, (i) {
                       return GestureDetector(
                         onTap: () => _toggleDay(i),
-                        child: Container(
-                          width: 36,
-                          height: 36,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          width: 44,
+                          height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
                             color: _selectedDays[i] ? Colors.blueGrey : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.blueGrey),
+                            boxShadow: _selectedDays[i]
+                                ? [BoxShadow(color: Colors.blueGrey.shade100, blurRadius: 6, offset: const Offset(0, 2))]
+                                : [],
                           ),
                           child: Text(
                             dayLabels[i],
                             style: TextStyle(
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: _selectedDays[i] ? Colors.white : Colors.blueGrey,
                             ),
@@ -89,42 +94,49 @@ class _DateScreenState extends State<DateScreen> {
                       );
                     }),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _getSelectedDaysString(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.blueGrey,
-                      fontSize: 16,
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      _getSelectedDaysString().isEmpty ? 'No days selected' : _getSelectedDaysString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.blueGrey,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
                   GestureDetector(
                     onTap: () => _selectDate(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.blueGrey),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 3)),
+                        ],
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          const Icon(Icons.calendar_today, color: Colors.blueGrey),
+                          const SizedBox(width: 12),
                           const Text(
-                            'Start Date',
+                            'Start Date:',
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               fontSize: 16,
                               color: Colors.blueGrey,
                             ),
                           ),
+                          const Spacer(),
                           Text(
-                            '${_selectedDate.month}/${_selectedDate.day}',
+                            '${_selectedDate.month}/${_selectedDate.day}/${_selectedDate.year}',
                             style: const TextStyle(
                               fontSize: 16,
-                              color: Colors.blueGrey,
                               fontWeight: FontWeight.bold,
+                              color: Colors.blueGrey,
                             ),
                           ),
                         ],
@@ -137,19 +149,22 @@ class _DateScreenState extends State<DateScreen> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueGrey,
-                        minimumSize: const Size(160, 40),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      onPressed: () => Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => HomePage()),
-                        (route) => false,
-                      ),
-                      child: const Text('Done',
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HomePage()),
+                          (route) => false,
+                        );
+                      },
+                      child: const Text(
+                        'Done',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
