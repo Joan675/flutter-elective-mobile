@@ -60,8 +60,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  TimeOfDay _parseTimeOfDay(String time) {
+    final parts = time.split(RegExp(r'[: ]'));
+    int hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+    final period = parts[2].toUpperCase();
+    if (period == 'PM' && hour != 12) hour += 12;
+    if (period == 'AM' && hour == 12) hour = 0;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
   void _loadAppointments() async {
     final loadedAppointments = await ProfileStorage.loadAppointments();
+
+    // Sort by date and time
+    loadedAppointments.sort((a, b) {
+      final dateA = DateTime.parse(a['date']!);
+      final dateB = DateTime.parse(b['date']!);
+
+      if (dateA.isBefore(dateB)) return -1;
+      if (dateA.isAfter(dateB)) return 1;
+
+      // If same date, sort by time
+      final timeA = _parseTimeOfDay(a['time']!);
+      final timeB = _parseTimeOfDay(b['time']!);
+      return timeA.hour.compareTo(timeB.hour) != 0
+          ? timeA.hour.compareTo(timeB.hour)
+          : timeA.minute.compareTo(timeB.minute);
+    });
+
     setState(() {
       _appointments.clear();
       _appointments.addAll(loadedAppointments);
@@ -131,8 +158,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _sortAppointments() {
+    _appointments.sort((a, b) {
+      final dateA = DateTime.parse(a['date']!);
+      final dateB = DateTime.parse(b['date']!);
+
+      if (dateA.isBefore(dateB)) return -1;
+      if (dateA.isAfter(dateB)) return 1;
+
+      // If same date, sort by time
+      final timeA = _parseTimeOfDay(a['time']!);
+      final timeB = _parseTimeOfDay(b['time']!);
+      return timeA.hour.compareTo(timeB.hour) != 0
+          ? timeA.hour.compareTo(timeB.hour)
+          : timeA.minute.compareTo(timeB.minute);
+    });
+  }
+
   void _addAppointment({Map<String, String>? existingAppointment, int? index}) async {
-    final result = await showDialog<Map<String, String>>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => AddAppointmentDialog(
         initialData: existingAppointment,
@@ -140,15 +184,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (result != null) {
-      setState(() {
-        if (index != null) {
-          _appointments[index] = result;
-        } else {
-          _appointments.add(result);
-        }
-      });
+      // Handle deletion
+      if (result['deleted'] == true && index != null) {
+        setState(() {
+          _appointments.removeAt(index);
+          _sortAppointments();
+        });
+      }
+      // Handle save or new
+      else if (result.containsKey('date') && result.containsKey('time')) {
+        setState(() {
+          if (index != null) {
+            _appointments[index] = {
+              'date': result['date'],
+              'time': result['time'],
+              'reason': result['reason'],
+            };
+          } else {
+            _appointments.add({
+              'date': result['date'],
+              'time': result['time'],
+              'reason': result['reason'],
+            });
+          }
+          _sortAppointments();
+        });
+      }
 
-      // Save after changes
       await ProfileStorage.saveAppointments(_appointments);
     }
   }
@@ -680,33 +742,27 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
   void initState() {
     super.initState();
     _reasonC = TextEditingController();
-
-    // ✅ Default values
     _time = TimeOfDay.now();
     _date = DateTime.now();
 
     if (widget.initialData != null) {
       _reasonC.text = widget.initialData!['reason'] ?? '';
-
-      // ---- DATE ----
-      _date = DateTime.parse(widget.initialData!['date']!);   // ← change ✔
-
-      // ---- TIME ----
-      final rawTime  = widget.initialData!['time']!;
-      final parts    = rawTime.split(RegExp(r'[: ]'));
-      int   hour     = int.parse(parts[0]);
-      final minute   = int.parse(parts[1]);
-      final period   = parts[2].toUpperCase();
+      _date = DateTime.parse(widget.initialData!['date']!);
+      final rawTime = widget.initialData!['time']!;
+      final parts = rawTime.split(RegExp(r'[: ]'));
+      int hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      final period = parts[2].toUpperCase();
       if (period == 'PM' && hour != 12) hour += 12;
       if (period == 'AM' && hour == 12) hour = 0;
       _time = TimeOfDay(hour: hour, minute: minute);
     }
 
-    // ✅ Trigger rebuild to reflect the correct initial _date
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {});
     });
   }
+
   void _selectTime() async {
     final picked = await showTimePicker(context: context, initialTime: _time);
     if (picked != null) setState(() => _time = picked);
@@ -730,10 +786,14 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
     }
 
     Navigator.of(context).pop({
-      'time' : _time.format(context),
-      'date' : _date.toIso8601String(),   // ← change ✔
+      'time': _time.format(context),
+      'date': _date.toIso8601String(),
       'reason': _reasonC.text,
     });
+  }
+
+  void _delete() {
+    Navigator.of(context).pop({'deleted': true});
   }
 
   @override
@@ -742,6 +802,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
     final hour = _time.hourOfPeriod.toString().padLeft(2, '0');
     final minute = _time.minute.toString().padLeft(2, '0');
     final dateDisplay = DateFormat('MMMM dd, yyyy').format(_date);
+    final isEditMode = widget.initialData != null;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -753,14 +814,13 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Title ───────────────────────────────────────────
             Row(
-              children: const [
-                Icon(Icons.event, color: Color(0xFF78AFC9)),
-                SizedBox(width: 8),
+              children: [
+                const Icon(Icons.event, color: Color(0xFF78AFC9)),
+                const SizedBox(width: 8),
                 Text(
-                  'Add Appointment',
-                  style: TextStyle(
+                  isEditMode ? 'Edit Appointment' : 'Add Appointment',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF333333),
@@ -769,15 +829,11 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
               ],
             ),
             const SizedBox(height: 24),
-
-            // ── Date ────────────────────────────────────────────
-            const Text('Date',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const Text('Date', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             GestureDetector(
               onTap: _selectDate,
               child: Container(
-                width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
@@ -793,12 +849,8 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // ── Time ────────────────────────────────────────────
-            const Text('Time',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const Text('Time', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             GestureDetector(
               onTap: _selectTime,
@@ -811,13 +863,9 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(hour,
-                        style: const TextStyle(
-                            fontSize: 32, fontWeight: FontWeight.bold)),
+                    Text(hour, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
                     const Text(':', style: TextStyle(fontSize: 32)),
-                    Text(minute,
-                        style: const TextStyle(
-                            fontSize: 32, fontWeight: FontWeight.bold)),
+                    Text(minute, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 16),
                     Column(
                       children: [
@@ -829,12 +877,8 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // ── Reason ──────────────────────────────────────────
-            const Text('Reason',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const Text('Reason', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             TextField(
               controller: _reasonC,
@@ -848,25 +892,36 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
                 ),
               ),
             ),
-
             const SizedBox(height: 28),
-
-            // ── Submit Button ───────────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _submit,
-                icon: const Icon(Icons.check),
-                label: const Text('Confirm Appointment'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF78AFC9),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                if (isEditMode)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _delete,
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      label: const Text('Delete', style: TextStyle(color: Colors.red)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                if (isEditMode) const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _submit,
+                    icon: const Icon(Icons.check_circle),
+                    label: Text(isEditMode ? 'Save Changes' : 'Confirm Appointment'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF78AFC9),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

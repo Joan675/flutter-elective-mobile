@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:path_provider/path_provider.dart';
 import '../static/wavy_background.dart';
 import '../static/app_sidebar.dart';
 import 'frequency_screen.dart';
@@ -15,10 +14,10 @@ class AddMedicineScreen extends StatefulWidget {
 
 class _AddMedicineScreenState extends State<AddMedicineScreen> {
   final List<String> _labels = const [
-    'Liquid', 'Capsule', 'Tablet', 'Drops', 'Inhalers', 'Injections', 'Patches'
+    'All', 'Liquid', 'Capsule', 'Tablet', 'Drops', 'Inhalers', 'Injections', 'Patches'
   ];
 
-  int _selectedIndex = 1; // Capsule
+  int _selectedIndex = 0; // Capsule
   final TextEditingController _searchController = TextEditingController();
   List<Medicine> _allMedicines = [];
   List<Medicine> _filteredMedicines = [];
@@ -33,10 +32,20 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
 
   void _applyFilter() {
     String selectedType = _labels[_selectedIndex];
+    String query = _searchController.text.toLowerCase();
+
     setState(() {
-      _filteredMedicines = _allMedicines
-          .where((m) => m.medtype.toLowerCase().contains(selectedType.toLowerCase()))
-          .toList();
+      _filteredMedicines = _allMedicines.where((m) {
+        bool matchesType = selectedType == 'All'
+            ? true
+            : m.medtype.toLowerCase().contains(selectedType.toLowerCase());
+
+        bool matchesSearch = m.name.toLowerCase().contains(query) ||
+                            m.brand.toLowerCase().contains(query) ||
+                            m.uses.toLowerCase().contains(query);
+
+        return matchesType && matchesSearch;
+      }).toList();
     });
   }
 
@@ -222,16 +231,6 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoText(String label) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 14, color: Colors.black87),
       ),
     );
   }
