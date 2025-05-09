@@ -39,11 +39,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
     Future.delayed(const Duration(milliseconds: 300), () {
       final position = _scrollController.position;
-      final isNearBottom = position.pixels <= position.minScrollExtent + 100;
+      final isUserAtBottom = position.pixels >= position.maxScrollExtent - 100;
 
-      if (isNearBottom) {
+      if (isUserAtBottom) {
         _scrollController.animateTo(
-          position.minScrollExtent,
+          position.maxScrollExtent,
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeOut,
         );
