@@ -78,6 +78,11 @@ class _MapScreenState extends State<MapScreen> {
     _nearest = _pharmacies.take(3).toList();
   }
 
+  LatLng _offsetLatLng(LatLng original, {double offsetInMeters = -250}) {
+    final offsetLat = _distance.offset(original, offsetInMeters, 0); // 0° = north
+    return offsetLat;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -131,6 +136,7 @@ class _MapScreenState extends State<MapScreen> {
                             onTap: () {
                               setState(() => _selected = p);
                               _panelController.open();
+                              _mapController.move(_offsetLatLng(p.location), 16);
                             },
                             child: const Icon(Icons.location_on, color: Colors.cyan, size: 36),
                           ),
@@ -187,7 +193,7 @@ class _MapScreenState extends State<MapScreen> {
                           onTap: () {
                             setState(() => _selected = p);
                             _panelController.open();
-                            _mapController.move(p.location, 16);
+                            _mapController.move(_offsetLatLng(p.location), 16);
                           },
                         ),
                       );
@@ -271,7 +277,7 @@ Widget _detailPanel(Pharmacy p) {
                 setState(() {
                   _routePoints = route;
                 });
-                _mapController.move(bounds.center, 14);
+                _mapController.move(_offsetLatLng(bounds.center), 14);
               }
             },
           ),

@@ -14,21 +14,21 @@ List<Medicine> seedMedicines = [
     warnings: 'Avoid potassium supplements',
   ),
   Medicine(
-    name: 'Abacavir',
-    medtype: 'tablet',
-    brand: 'Ziagen',
-    quantity: 60,
-    stock: 57.0,
-    uses: 'Treatment of HIV-1 infection',
-    sideEffects: 'Hypersensitivity reaction, nausea, headache',
-    ingredients: 'Abacavir sulfate 300 mg',
-    directions: 'Take one tablet twice daily or as directed by a healthcare provider',
-    warnings: 'Screen for HLA-B*5701 allele before starting due to risk of hypersensitivity reaction'
+      name: 'Abacavir',
+      medtype: 'Tablet',
+      brand: 'Ziagen',
+      quantity: 60,
+      stock: 57.0,
+      uses: 'Treatment of HIV-1 infection',
+      sideEffects: 'Hypersensitivity reaction, nausea, headache',
+      ingredients: 'Abacavir sulfate 300 mg',
+      directions: 'Take one tablet twice daily or as directed by a healthcare provider',
+      warnings: 'Screen for HLA-B*5701 allele before starting due to risk of hypersensitivity reaction'
   ),
 
   Medicine(
       name: 'Acetated Ringer\'s Solution',
-      medtype: 'injection',
+      medtype: 'Injections',
       brand: 'Generic',
       quantity: 1,
       stock: 1.0,
@@ -41,7 +41,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Acetazolamide',
-      medtype: 'tablet',
+      medtype: 'Tablet',
       brand: 'Diamox',
       quantity: 100,
       stock: 95.0,
@@ -54,7 +54,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Acetylcysteine',
-      medtype: 'inhalation',
+      medtype: 'Inhalers',
       brand: 'Fluimucil Inhalant',
       quantity: 5,
       stock: 5.0,
@@ -67,11 +67,11 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Adenosine',
-      medtype: 'injection',
+      medtype: 'Injections',
       brand: 'Adenocard',
       quantity: 10,
       stock: 10.0,
-      uses: 'Management of supraventricular tachycardia (SVT)',
+      uses: 'Management of supraventricular tachycardia (SVT),',
       sideEffects: 'Flushing, chest pain, shortness of breath',
       ingredients: 'Adenosine 3 mg/mL in 2 mL vial',
       directions: 'Administer as IV push rapidly as directed by healthcare provider',
@@ -79,21 +79,21 @@ List<Medicine> seedMedicines = [
   ),
 
   Medicine(
-      name: 'Epinephrine (Adrenaline)',
-      medtype: 'injection',
+      name: 'Epinephrine (Adrenaline),',
+      medtype: 'Injections',
       brand: 'Adrenalin',
       quantity: 10,
       stock: 8.0,
       uses: 'Treatment of anaphylaxis, cardiac arrest',
       sideEffects: 'Palpitations, anxiety, headache',
-      ingredients: 'Epinephrine 1 mg/mL (as Hydrochloride) in 1 mL ampul',
+      ingredients: 'Epinephrine 1 mg/mL (as Hydrochloride), in 1 mL ampul',
       directions: 'Administer via IV, IM, or SC as prescribed',
       warnings: 'Use with caution in patients with cardiovascular diseases'
   ),
 
   Medicine(
       name: 'Albendazole',
-      medtype: 'tablet',
+      medtype: 'Tablet',
       brand: 'Albenza',
       quantity: 60,
       stock: 58.0,
@@ -106,7 +106,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Aluminum + Magnesium',
-      medtype: 'tablet',
+      medtype: 'Tablet',
       brand: 'Maalox',
       quantity: 60,
       stock: 55.0,
@@ -119,7 +119,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Amikacin',
-      medtype: 'injection',
+      medtype: 'Injections',
       brand: 'Amikin',
       quantity: 20,
       stock: 18.0,
@@ -132,7 +132,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Anti-rabies serum',
-      medtype: 'injection',
+      medtype: 'Injections',
       brand: 'RabIg',
       quantity: 5,
       stock: 5.0,
@@ -145,7 +145,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Anti-tetanus serum',
-      medtype: 'injection',
+      medtype: 'Injections',
       brand: 'Tetanus Immune Globulin',
       quantity: 5,
       stock: 5.0,
@@ -158,7 +158,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Azithromycin',
-      medtype: 'tablet',
+      medtype: 'Tablet',
       brand: 'Zithromax',
       quantity: 60,
       stock: 58.0,
@@ -171,7 +171,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Baclofen',
-      medtype: 'tablet',
+      medtype: 'Tablet',
       brand: 'Lioresal',
       quantity: 30,
       stock: 28.0,
@@ -184,63 +184,63 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Barium',
-      medtype: 'tablet',
+      medtype: 'Tablet',
       brand: 'Varibar',
       quantity: 1,
       stock: 1.0,
       uses: 'Used for X-ray contrast imaging',
       sideEffects: 'Constipation, nausea',
-      ingredients: 'Barium sulfate (340 g per pouch)',
+      ingredients: 'Barium sulfate (340 g per pouch),',
       directions: 'Suspend in water and ingest as directed for X-ray imaging',
       warnings: 'Avoid in patients with known gastrointestinal perforation or obstruction'
   ),
 
   Medicine(
       name: 'Betaxolol',
-      medtype: 'drops',
+      medtype: 'Drops',
       brand: 'Betoptic',
       quantity: 1,
       stock: 1.0,
       uses: 'Treatment of elevated intraocular pressure in glaucoma',
       sideEffects: 'Eye irritation, blurred vision, dry eyes',
       ingredients: 'Betaxolol hydrochloride 0.25%',
-      directions: 'Instill one drop in the affected eye(s) twice daily',
+      directions: 'Instill one drop in the affected eye(s), twice daily',
       warnings: 'Use with caution in patients with bradycardia or heart block'
   ),
 
   Medicine(
       name: 'Brimonidine',
-      medtype: 'drops',
+      medtype: 'Drops',
       brand: 'Alphagan',
       quantity: 1,
       stock: 1.0,
       uses: 'Lowering intraocular pressure in glaucoma',
       sideEffects: 'Burning sensation in eyes, dry mouth, headache',
       ingredients: 'Brimonidine tartrate 0.15%',
-      directions: 'Instill one drop in the affected eye(s) twice daily',
+      directions: 'Instill one drop in the affected eye(s), twice daily',
       warnings: 'Caution in patients with cardiovascular disorders'
   ),
 
   Medicine(
       name: 'Brinzolamide',
-      medtype: 'drops',
+      medtype: 'Drops',
       brand: 'Azopt',
       quantity: 1,
       stock: 1.0,
       uses: 'Treatment of elevated intraocular pressure in glaucoma',
       sideEffects: 'Eye irritation, blurred vision, taste alteration',
       ingredients: 'Brinzolamide 1%',
-      directions: 'Instill one drop in the affected eye(s) twice daily',
+      directions: 'Instill one drop in the affected eye(s), twice daily',
       warnings: 'Use with caution in patients with renal impairment'
   ),
 
   Medicine(
       name: 'Budesonide',
-      medtype: 'inhalation',
+      medtype: 'Inhalers',
       brand: 'Pulmicort',
       quantity: 60,
       stock: 55.0,
-      uses: 'Treatment of asthma and chronic obstructive pulmonary disease (COPD)',
+      uses: 'Treatment of asthma and chronic obstructive pulmonary disease (COPD),',
       sideEffects: 'Cough, hoarseness, throat irritation',
       ingredients: 'Budesonide 250 mcg/mL in 2 mL unit dose',
       directions: 'Inhale one unit dose as prescribed, usually twice daily',
@@ -249,7 +249,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Budesonide + Formoterol',
-      medtype: 'inhalation',
+      medtype: 'Inhalers',
       brand: 'Symbicort',
       quantity: 120,
       stock: 110.0,
@@ -262,7 +262,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Bumetanide',
-      medtype: 'tablet',
+      medtype: 'Tablet',
       brand: 'Bumex',
       quantity: 30,
       stock: 28.0,
@@ -275,7 +275,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Carbachol',
-      medtype: 'drops',
+      medtype: 'Drops',
       brand: 'Miostat',
       quantity: 1,
       stock: 1.0,
@@ -288,7 +288,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Fentanyl',
-      medtype: 'patch',
+      medtype: 'Patches',
       brand: 'Duragesic',
       quantity: 1,
       stock: 1.0,
@@ -301,7 +301,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Ibuprofen',
-      medtype: 'capsule',
+      medtype: 'Capsule',
       brand: 'Advil',
       quantity: 20,
       stock: 20.0,
@@ -314,7 +314,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Amoxicillin',
-      medtype: 'capsule',
+      medtype: 'Capsule',
       brand: 'Amoxil',
       quantity: 30,
       stock: 30.0,
@@ -327,7 +327,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Clonidine',
-      medtype: 'patch',
+      medtype: 'Patches',
       brand: 'Catapres-TTS',
       quantity: 1,
       stock: 1.0,
@@ -340,7 +340,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Buprenorphine',
-      medtype: 'patch',
+      medtype: 'Patches',
       brand: 'Butrans',
       quantity: 1,
       stock: 1.0,
@@ -353,7 +353,7 @@ List<Medicine> seedMedicines = [
 
   Medicine(
       name: 'Fluoxetine',
-      medtype: 'capsule',
+      medtype: 'Capsule',
       brand: 'Prozac',
       quantity: 30,
       stock: 30.0,
@@ -362,6 +362,67 @@ List<Medicine> seedMedicines = [
       ingredients: 'Fluoxetine 20 mg',
       directions: 'Take 1 capsule daily, usually in the morning',
       warnings: 'May increase risk of suicidal thoughts; monitor mood changes'
+  ),
+
+  Medicine(
+    name: 'Paracetamol Syrup',
+    medtype: 'Liquid',
+    brand: 'Biogesic',
+    quantity: 1,
+    stock: 1.0,
+    uses: 'Reduces fever and relieves mild to moderate pain',
+    sideEffects: 'Nausea, allergic reactions, liver issues with overdose',
+    ingredients: 'Paracetamol 250mg/5ml',
+    directions: 'Take 5ml every 4–6 hours as needed, not exceeding 4 doses in 24 hours',
+    warnings: 'Do not exceed recommended dose; consult doctor for use in children under 2 years'
+  ),
+  Medicine(
+    name: 'Ambroxol Syrup',
+    medtype: 'Liquid',
+    brand: 'Mucosolvan',
+    quantity: 1,
+    stock: 1.0,
+    uses: 'Relieves cough with phlegm by thinning mucus',
+    sideEffects: 'Gastrointestinal discomfort, headache, allergic rash',
+    ingredients: 'Ambroxol Hydrochloride 30mg/5ml',
+    directions: 'Take 5ml two to three times daily after meals',
+    warnings: 'Use with caution in patients with peptic ulcer or severe liver disease'
+  ),
+  Medicine(
+    name: 'Salbutamol Syrup',
+    medtype: 'Liquid',
+    brand: 'Ventolin',
+    quantity: 1,
+    stock: 1.0,
+    uses: 'Relieves bronchospasm in asthma and other airway diseases',
+    sideEffects: 'Tremor, headache, increased heart rate, nervousness',
+    ingredients: 'Salbutamol Sulfate 2mg/5ml',
+    directions: '5ml three times a day or as prescribed by physician',
+    warnings: 'Use with caution in patients with cardiovascular disorders'
+  ),
+  Medicine(
+    name: 'Ibuprofen Suspension',
+    medtype: 'liquid',
+    brand: 'Advil',
+    quantity: 1,
+    stock: 1.0,
+    uses: 'Relieves pain, fever, and inflammation',
+    sideEffects: 'Nausea, dizziness, gastrointestinal upset',
+    ingredients: 'Ibuprofen 100mg/5ml',
+    directions: 'Take 5ml every 6–8 hours, not exceeding 4 doses per day',
+    warnings: 'Avoid use in patients with peptic ulcer or renal impairment'
+  ),
+  Medicine(
+    name: 'Cefalexin Suspension',
+    medtype: 'Liquid',
+    brand: 'Keflex',
+    quantity: 1,
+    stock: 1.0,
+    uses: 'Treats bacterial infections like tonsillitis, skin infections, and UTIs',
+    sideEffects: 'Diarrhea, nausea, allergic reactions',
+    ingredients: 'Cefalexin 250mg/5ml',
+    directions: '5ml every 8 hours for 7 to 10 days or as prescribed',
+    warnings: 'Complete full course; inform physician if rash or allergy occurs'
   ),
   // Add more medicines here...
 ];
