@@ -578,13 +578,37 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
   void _save() {
     final age = int.tryParse(_ageC.text);
+    final contact = _contactC.text.trim();
+    final email = _emailC.text.trim();
+
+    // Regex for PH contact number: starts with 09 and is 11 digits
+    final contactRegex = RegExp(r'^09\d{9}$');
+
+    // Basic email format check
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+
     if (_nameC.text.isEmpty ||
         _addressC.text.isEmpty ||
         age == null ||
-        _contactC.text.isEmpty ||
-        _emailC.text.isEmpty) {
+        contact.isEmpty ||
+        email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill all fields correctly.')));
+        const SnackBar(content: Text('Please fill all fields.')),
+      );
+      return;
+    }
+
+    if (!contactRegex.hasMatch(contact)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Contact number must start with 09 and be 11 digits.')),
+      );
+      return;
+    }
+
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address.')),
+      );
       return;
     }
 
@@ -592,8 +616,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       'name': _nameC.text,
       'address': _addressC.text,
       'age': age,
-      'contactNumber': _contactC.text,
-      'emailAddress': _emailC.text,
+      'contactNumber': contact,
+      'emailAddress': email,
       'birthDate': _selectedDate,
     });
   }
