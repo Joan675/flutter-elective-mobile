@@ -30,6 +30,8 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     _applyFilter();
   }
 
+
+
   void _applyFilter() {
     String selectedType = _labels[_selectedIndex];
     String query = _searchController.text.toLowerCase();

@@ -1,5 +1,6 @@
 import '../models/medicine.dart';
 
+
 List<Medicine> seedMedicines = [
   Medicine(
     name: 'Lisinopril',

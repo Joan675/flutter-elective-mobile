@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../static/wavy_background.dart';
 import 'date_screen.dart';
 import '../models/medicine.dart';
+import '../services/alarm_service.dart';
+
 
 class AlarmScreen extends StatefulWidget {
   final Medicine selectedMedicine;
@@ -222,14 +224,11 @@ class _AlarmScreenState extends State<AlarmScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         elevation: 5,
                       ),
-                      onPressed: () {
-                        final formattedTimes = List<String>.generate(_intakeTimes.length, (i) {
-                          // If time was selected via picker, use it
-                          if (_intakeTimes[i] != null) {
-                            return _intakeTimes[i]!.format(context);
-                          }
+                      onPressed: () async {
+                        int medicineId = widget.selectedMedicine.key;
+                        List<String> formattedTimes = [];
 
-                          // Otherwise, parse manually from text fields + AM/PM
+                        for (int i = 0; i < _intakeTimes.length; i++) {
                           int hour = int.tryParse(_hourControllers[i].text) ?? 8;
                           int minute = int.tryParse(_minuteControllers[i].text) ?? 0;
                           String ampm = _ampmValues[i];
@@ -238,11 +237,30 @@ class _AlarmScreenState extends State<AlarmScreen> {
                           if (ampm == 'PM' && hour < 12) hour += 12;
                           if (ampm == 'AM' && hour == 12) hour = 0;
 
-                          final fallback = TimeOfDay(hour: hour, minute: minute);
-                          return fallback.format(context);
-                        });
+                          // Create today's DateTime with selected hour/minute
+                          DateTime now = DateTime.now();
+                          DateTime scheduledTime = DateTime(now.year, now.month, now.day, hour, minute);
 
-                        Navigator.push(
+                          // If time has passed for today, schedule for next day
+                          if (scheduledTime.isBefore(now)) {
+                            scheduledTime = scheduledTime.add(const Duration(days: 1));
+                          }
+
+                          int alarmId = medicineId * 10 + i;
+
+                          // Schedule the alarm
+                          await AlarmService.scheduleAlarm(
+                            id: alarmId,
+                            title: 'Take your medicine!',
+                            body: '${widget.selectedMedicine.name} - ${_ordinalLabel(i)} intake',
+                            scheduledDateTime: scheduledTime,
+                          );
+
+                          // Format time for display
+                          formattedTimes.add(TimeOfDay(hour: hour, minute: minute).format(context));
+                        }
+
+                          Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => DateScreen(

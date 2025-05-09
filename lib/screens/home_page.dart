@@ -1,3 +1,4 @@
+import 'package:firstapp/data/seed_medicines.dart';
 import 'package:flutter/material.dart';
 import '../static/wavy_background.dart';
 import '../static/app_sidebar.dart';
@@ -28,7 +29,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-void _showDetailsDialog(BuildContext context, Map<String, dynamic> data) {
+  void _showDetailsDialog(BuildContext context, Map<String, dynamic> data) {
   final intakeDays = List<bool>.from(data['intakeDays'] ?? []);
   final alarmTimes = List<String>.from(data['alarmTimes'] ?? []);
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
