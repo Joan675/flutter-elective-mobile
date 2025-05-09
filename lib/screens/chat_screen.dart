@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../static/wavy_background.dart';
 import '../static/app_sidebar.dart';
 import '../services/gemini_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -17,20 +20,54 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage(String text, {String sender = 'User'}) async {
     if (text.trim().isEmpty) return;
 
-    setState(() => _messages.add('$sender: $text'));
+    final isFirstUserMessage = _messages.where((m) => m.startsWith('User:')).isEmpty;
 
-    final response = await GeminiService.getGeminiResponse(text);
-
-    setState(() => _messages.add('Synciee: $response'));
-
-    // Scroll to bottom after short delay
-    Future.delayed(const Duration(milliseconds: 300), () {
-      _scrollController.animateTo(
-        0.0,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOut,
-      );
+    setState(() {
+      _messages.add('$sender: $text');
+      if (_messages.length > 10) _messages.removeAt(0);
     });
+    await _saveMessages();
+
+    final memory = isFirstUserMessage ? List<String>.from(_messages) : null;
+    final response = await GeminiService.getGeminiResponse(text, memory: memory);
+
+    setState(() {
+      _messages.add('Synciee: $response');
+      if (_messages.length > 10) _messages.removeAt(0);
+    });
+    await _saveMessages();
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      final position = _scrollController.position;
+      final isNearBottom = position.pixels <= position.minScrollExtent + 100;
+
+      if (isNearBottom) {
+        _scrollController.animateTo(
+          position.minScrollExtent,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _loadMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList('chat_messages');
+    if (stored != null && mounted) {
+      setState(() => _messages.addAll(stored));
+    }
+  }
+
+  Future<void> _saveMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('chat_messages', _messages);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
   }
 
   @override

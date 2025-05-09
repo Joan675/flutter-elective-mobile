@@ -64,6 +64,11 @@ class _MapScreenState extends State<MapScreen> {
       _currentLoc = LatLng(pos.latitude, pos.longitude);
       _sortNearest();
     });
+
+    // Open panel after nearest is computed
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _panelController.open();
+    });
   }
 
   void _sortNearest() {
@@ -104,9 +109,11 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    subdomains: const ['a', 'b', 'c'],
+                    urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+                    subdomains: const ['a', 'b', 'c', 'd'],
+                    userAgentPackageName: 'com.example.yourapp',
                   ),
+
                   MarkerLayer(
                     markers: [
                       Marker(
@@ -162,9 +169,11 @@ class _MapScreenState extends State<MapScreen> {
                     const Text('Nearest Pharmacies',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
-                    ..._pharmacies.map((p) {
-                      final km = _distance(_currentLoc!, p.location) / 1000;
-                      final mins = (km / 0.4) * 60;
+                    ..._nearest.map((p) {
+                      final dist = _distance(_currentLoc!, p.location); // in meters
+                      final distLabel = dist >= 1000
+                          ? '${(dist / 1000).toStringAsFixed(2)} km'
+                          : '${dist.toStringAsFixed(0)} m';
                       return Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         elevation: 3,
@@ -174,8 +183,7 @@ class _MapScreenState extends State<MapScreen> {
                               style: const TextStyle(
                                   fontWeight: FontWeight.w500, color: Colors.lightBlue)),
                           subtitle: Text(p.address, style: const TextStyle(fontSize: 12)),
-                          trailing: Text('${mins.toStringAsFixed(0)} min',
-                              style: const TextStyle(color: Colors.black54)),
+                          trailing: Text(distLabel, style: const TextStyle(color: Colors.black54)),
                           onTap: () {
                             setState(() => _selected = p);
                             _panelController.open();
@@ -246,8 +254,9 @@ Widget _detailPanel(Pharmacy p) {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.directions, size: 20),
-            label: const Text('Show Directions'),
+            icon: const Icon(Icons.directions, size: 20, color: Colors.white,),
+            label: const Text('Show Directions',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.lightBlue,
               padding: const EdgeInsets.symmetric(vertical: 14),
