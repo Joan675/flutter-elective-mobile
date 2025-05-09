@@ -1,6 +1,6 @@
 import 'package:hive/hive.dart';
 
-part 'medicine.g.dart'; // This line is important for code generation
+part 'medicine.g.dart';
 
 @HiveType(typeId: 0)
 class Medicine extends HiveObject {
