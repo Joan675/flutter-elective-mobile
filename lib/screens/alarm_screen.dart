@@ -1,31 +1,62 @@
-// lib/screens/intake_time_screen.dart
 import 'package:firstapp/screens/frequency_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../static/wavy_background.dart'; // ✅ Import
-import 'next_screen.dart';
+import '../static/wavy_background.dart';
 import 'date_screen.dart';
+import '../models/medicine.dart';
 
 class AlarmScreen extends StatefulWidget {
-  const AlarmScreen({super.key});
+  final Medicine selectedMedicine;
+  final String frequency;
+  final String reminderDesc;
+
+  const AlarmScreen({
+    super.key,
+    required this.selectedMedicine,
+    required this.frequency,
+    required this.reminderDesc,
+  });
 
   @override
   _AlarmScreenState createState() => _AlarmScreenState();
 }
 
+
 class _AlarmScreenState extends State<AlarmScreen> {
-  final _intakeTimes = <TimeOfDay?>[null, null, null];
-  final _ampmValues = ['AM', 'AM', 'AM'];
-  final _hourControllers = [
-    TextEditingController(text: '20'),
-    TextEditingController(text: '20'),
-    TextEditingController(text: '20'),
-  ];
-  final _minuteControllers = [
-    TextEditingController(text: '00'),
-    TextEditingController(text: '00'),
-    TextEditingController(text: '00'),
-  ];
+  late List<TimeOfDay?> _intakeTimes;
+  late List<String> _ampmValues;
+  late List<TextEditingController> _hourControllers;
+  late List<TextEditingController> _minuteControllers;
+
+  int _getCardCountFromFrequency(String frequency) {
+    switch (frequency.toLowerCase()) {
+      case 'once a day':
+        return 1;
+      case 'twice a day':
+        return 2;
+      case 'three times a day':
+        return 3;
+      case 'four times a day':
+        return 4;
+      default:
+        return 1;
+    }
+  }
+
+  String _ordinalLabel(int i) {
+    const labels = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'];
+    return i < labels.length ? labels[i] : 'Intake ${i + 1}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    int cardCount = _getCardCountFromFrequency(widget.frequency);
+    _intakeTimes = List<TimeOfDay?>.filled(cardCount, null);
+    _ampmValues = List<String>.filled(cardCount, 'AM');
+    _hourControllers = List.generate(cardCount, (_) => TextEditingController(text: '08'));
+    _minuteControllers = List.generate(cardCount, (_) => TextEditingController(text: '00'));
+  }
 
   Future<void> _selectTime(BuildContext ctx, int i) async {
     final picked = await showTimePicker(
@@ -43,97 +74,191 @@ class _AlarmScreenState extends State<AlarmScreen> {
   }
 
   Widget _buildTimeInput(BuildContext ctx, int i) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), color: Colors.white),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Enter time of ${['First','Second','Third'][i]} Intake'),
-        const SizedBox(height: 12),
-        Row(children: [
-          SizedBox(
-            width: 50,
-            child: TextField(
-              controller: _hourControllers[i],
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(2)
-              ],
-              decoration: const InputDecoration(hintText: 'HH'),
-            ),
-          ),
-          const Text(' : '),
-          SizedBox(
-            width: 50,
-            child: TextField(
-              controller: _minuteControllers[i],
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(2)
-              ],
-              decoration: const InputDecoration(hintText: 'MM'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _ampmValues[i] = _ampmValues[i] == 'AM' ? 'PM' : 'AM';
-                int hour = int.parse(_hourControllers[i].text);
-                if (_ampmValues[i] == 'PM' && hour < 12) hour += 12;
-                else if (_ampmValues[i] == 'AM' && hour == 12) hour = 0;
-                _intakeTimes[i] = (_intakeTimes[i] ?? TimeOfDay.now()).replacing(hour: hour);
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                color: _ampmValues[i] == 'AM' ? Colors.blue[100] : Colors.grey[300],
+    return Card(
+      color: Colors.grey[50],
+      elevation: 6,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Time for ${_ordinalLabel(i)} Intake',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF333333),
               ),
-              child: Text(_ampmValues[i]),
             ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                _buildTimeTextField(_hourControllers[i], 'HH'),
+                const SizedBox(width: 6),
+                const Text(':', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 6),
+                _buildTimeTextField(_minuteControllers[i], 'MM'),
+                const SizedBox(width: 16),
+                _buildAmPmDropdown(i),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _selectTime(ctx, i),
+                icon: const Icon(Icons.access_time),
+                label: const Text('Pick Time'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeTextField(TextEditingController controller, String hint) {
+    return SizedBox(
+      width: 64,
+      child: TextField(
+        controller: controller,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(2),
+        ],
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.grey),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
-        ]),
-        const SizedBox(height: 12),
-        ElevatedButton(onPressed: () => _selectTime(ctx, i), child: const Text('Pick Time')),
-      ]),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAmPmDropdown(int i) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: DropdownButton<String>(
+        value: _ampmValues[i],
+        underline: const SizedBox(),
+        items: ['AM', 'PM'].map((value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          );
+        }).toList(),
+        onChanged: (newValue) {
+          if (newValue != null) {
+            setState(() {
+              _ampmValues[i] = newValue;
+              int hour = int.parse(_hourControllers[i].text);
+              if (newValue == 'PM' && hour < 12) hour += 12;
+              if (newValue == 'AM' && hour == 12) hour = 0;
+              _intakeTimes[i] = (_intakeTimes[i] ?? TimeOfDay.now()).replacing(hour: hour);
+            });
+          }
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true, // ✅ so the background goes under appbar
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FrequencyScreen())),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(
+            builder: (_) => FrequencyScreen(
+              selectedMedicine: widget.selectedMedicine,
+              ),
+            ),
           ),
+        ),
         title: const Text('Intake Time'),
-        backgroundColor: Colors.transparent, // ✅ transparent appbar
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: Stack(
         children: [
-          const WavyBackground(), // ✅ background painter
+          const WavyBackground(),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
                 children: [
-                  _buildTimeInput(context, 0),
-                  const SizedBox(height: 16),
-                  _buildTimeInput(context, 1),
-                  const SizedBox(height: 16),
-                  _buildTimeInput(context, 2),
+                  const SizedBox(height: 12),
+                  ..._intakeTimes.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    return _buildTimeInput(context, i);
+                  }).toList(),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const DateScreen()));
-                    },
-                    child: const Text('Next'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4DB1E3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 5,
+                      ),
+                      onPressed: () {
+                        final formattedTimes = List<String>.generate(_intakeTimes.length, (i) {
+                          // If time was selected via picker, use it
+                          if (_intakeTimes[i] != null) {
+                            return _intakeTimes[i]!.format(context);
+                          }
+
+                          // Otherwise, parse manually from text fields + AM/PM
+                          int hour = int.tryParse(_hourControllers[i].text) ?? 8;
+                          int minute = int.tryParse(_minuteControllers[i].text) ?? 0;
+                          String ampm = _ampmValues[i];
+
+                          // Convert to 24-hour format
+                          if (ampm == 'PM' && hour < 12) hour += 12;
+                          if (ampm == 'AM' && hour == 12) hour = 0;
+
+                          final fallback = TimeOfDay(hour: hour, minute: minute);
+                          return fallback.format(context);
+                        });
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DateScreen(
+                              selectedMedicine: widget.selectedMedicine,
+                              frequency: widget.frequency,
+                              reminderDesc: widget.reminderDesc,
+                              intakeTimes: formattedTimes, // 👈 ensures all times are filled
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Next',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
                   ),
                 ],
               ),

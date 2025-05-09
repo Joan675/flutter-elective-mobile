@@ -1,6 +1,5 @@
 // lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
-import 'next_screen.dart';
 import 'add_medicine_screen.dart';
 
 class SplashScreen extends StatelessWidget {

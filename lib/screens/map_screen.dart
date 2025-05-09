@@ -5,9 +5,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import '../services/nominatim_service.dart';
-import '../static/app_sidebar.dart';
 import '../services/directions_service.dart';
+import '../data/sample_pharmacies.dart';
+import '../static/app_sidebar.dart';
 
 class Pharmacy {
   final String id;
@@ -27,7 +27,6 @@ class Pharmacy {
   });
 }
 
-/* ──────────────────────────────────────── MAP SCREEN ─────────────────────── */
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -36,10 +35,8 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  /* --------------- controllers & state --------------- */
   final MapController _mapController = MapController();
   final PanelController _panelController = PanelController();
-  final TextEditingController _searchCtrl = TextEditingController();
 
   LatLng? _currentLoc;
   List<Pharmacy> _pharmacies = [];
@@ -49,47 +46,14 @@ class _MapScreenState extends State<MapScreen> {
 
   final Distance _distance = const Distance();
 
-  /* --------------- init --------------- */
   @override
   void initState() {
     super.initState();
-    _seedPharmacies();   // replace with API fetch if you have one
+    _pharmacies = List.from(samplePharmacies);
     _getCurrentLocation();
   }
 
-  /* --------------- sample data --------------- */
-  void _seedPharmacies() {
-    _pharmacies = [
-      Pharmacy(
-        id: 'P001',
-        name: 'Saturn Drugstore',
-        address: '123 Main St',
-        contact: '0999‑888‑7777',
-        hours: '08:00‑21:00',
-        location: LatLng(14.5995, 120.9842),
-      ),
-      Pharmacy(
-        id: 'P002',
-        name: 'Sample Store',
-        address: '456 Avenue Rd',
-        contact: '0999‑111‑2222',
-        hours: '09:00‑18:00',
-        location: LatLng(14.6010, 120.9850),
-      ),
-      Pharmacy(
-        id: 'P003',
-        name: 'Sample Stpre',
-        address: '789 Street Ln',
-        contact: '0987‑654‑3210',
-        hours: '24/7',
-        location: LatLng(14.5980, 120.9820),
-      ),
-    ];
-  }
-
-  /* --------------- geolocation --------------- */
   Future<void> _getCurrentLocation() async {
-    // permissions & service
     if (!await Geolocator.isLocationServiceEnabled()) return;
     LocationPermission p = await Geolocator.checkPermission();
     if (p == LocationPermission.denied) p = await Geolocator.requestPermission();
@@ -102,7 +66,6 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  /* --------------- sort pharmacies by distance --------------- */
   void _sortNearest() {
     if (_currentLoc == null) return;
     _pharmacies.sort((a, b) =>
@@ -110,23 +73,6 @@ class _MapScreenState extends State<MapScreen> {
     _nearest = _pharmacies.take(3).toList();
   }
 
-  /* --------------- search with Nominatim --------------- */
-  Future<void> _onSearch(String query) async {
-    if (query.trim().isEmpty) return;
-    final LatLng? coords = await NominatimService.getCoordinatesFromAddress(query.trim());
-    if (coords != null) {
-      _mapController.move(coords, 16); // zoom to searched place
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Moved to “$query”')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Location “$query” not found')),
-      );
-    }
-  }
-
-  /* --------------- UI --------------- */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -138,90 +84,62 @@ class _MapScreenState extends State<MapScreen> {
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
-        title: const Text('Find Stores'),
-        backgroundColor: Colors.lightBlue,
-        actions: [
-          IconButton(icon: const Icon(Icons.favorite), onPressed: () {}),
-        ],
+        title: const Text('Nearby Pharmacies'),
+        backgroundColor: const Color(0xFF81D4FA),
       ),
       body: _currentLoc == null
           ? const Center(child: CircularProgressIndicator())
           : SlidingUpPanel(
               controller: _panelController,
               minHeight: 140,
-              maxHeight: _selected != null ? 320 : 260,
+              maxHeight: MediaQuery.of(context).size.height * 0.35, // ← or higher if needed
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               panel: _selected == null ? _nearestPanel() : _detailPanel(_selected!),
-              body: Column(
+              body: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _currentLoc!,
+                  initialZoom: 15,
+                  onTap: (_, __) => setState(() => _selected = null),
+                ),
                 children: [
-                  /* -------- search bar -------- */
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-                    child: TextField(
-                      controller: _searchCtrl,
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: _onSearch,
-                      decoration: InputDecoration(
-                        hintText: 'Search place…',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
+                  TileLayer(
+                    urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
                   ),
-                  /* -------- map -------- */
-                  Expanded(
-                    child: FlutterMap(
-                      mapController: _mapController,
-                      options: MapOptions(
-                        initialCenter: _currentLoc!,
-                        initialZoom: 15,
-                        onTap: (_, __) => setState(() => _selected = null),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _currentLoc!,
+                        width: 40,
+                        height: 40,
+                        child: const Icon(Icons.my_location, color: Colors.blue, size: 28),
                       ),
-                      children: [
-                        TileLayer(
-                          urlTemplate:
-                              'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          subdomains: const ['a', 'b', 'c'],
+                      ..._pharmacies.map(
+                        (p) => Marker(
+                          point: p.location,
+                          width: 40,
+                          height: 40,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() => _selected = p);
+                              _panelController.open();
+                            },
+                            child: const Icon(Icons.location_on, color: Colors.cyan, size: 36),
+                          ),
                         ),
-                        MarkerLayer(
-                          markers: [
-                            /* user marker */
-                            Marker(
-                              point: _currentLoc!,
-                              width: 40,
-                              height: 40,
-                              child: const Icon(Icons.my_location, color: Colors.blue, size: 28),
-                            ),
-                            /* pharmacy markers */
-                            ..._pharmacies.map(
-                              (p) => Marker(
-                                point: p.location,
-                                width: 40,
-                                height: 40,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() => _selected = p);
-                                    _panelController.open();
-                                  },
-                                  child: const Icon(Icons.location_on, color: Colors.cyan, size: 36),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),PolylineLayer(
-                          polylines: [
-                            if (_routePoints.isNotEmpty)
-                              Polyline(
-                                points: _routePoints,
-                                strokeWidth: 5,
-                                color: Colors.blueAccent,
-                              ),
-                          ],
+                      ),
+                    ],
+                  ),
+                  PolylineLayer(
+                    polylines: [
+                      if (_routePoints.isNotEmpty)
+                        Polyline(
+                          points: _routePoints,
+                          strokeWidth: 5,
+                          color: Colors.blueAccent,
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -229,96 +147,149 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /* --------------- sliding‑panel content --------------- */
   Widget _nearestPanel() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Nearest Store',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 8),
-          ..._nearest.map((p) {
-            final km = _distance(_currentLoc!, p.location) / 1000;
-            final mins = (km / 0.4) * 60; // rough 24 km/h walking ≈ 0.4 km/min
-            return Card(
-              child: ListTile(
-                leading: const Icon(Icons.visibility),
-                title: Text(p.name,
-                    style: const TextStyle(color: Colors.lightBlue)),
-                trailing: Text('${mins.toStringAsFixed(0)} min'),
-                onTap: () {
-                  setState(() => _selected = p);
-                  _panelController.open();
-                  _mapController.move(p.location, 16);
-                },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Nearest Pharmacies',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    ..._pharmacies.map((p) {
+                      final km = _distance(_currentLoc!, p.location) / 1000;
+                      final mins = (km / 0.4) * 60;
+                      return Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 3,
+                        child: ListTile(
+                          leading: const Icon(Icons.local_pharmacy, color: Colors.lightBlue),
+                          title: Text(p.name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w500, color: Colors.lightBlue)),
+                          subtitle: Text(p.address, style: const TextStyle(fontSize: 12)),
+                          trailing: Text('${mins.toStringAsFixed(0)} min',
+                              style: const TextStyle(color: Colors.black54)),
+                          onTap: () {
+                            setState(() => _selected = p);
+                            _panelController.open();
+                            _mapController.move(p.location, 16);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
               ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _detailPanel(Pharmacy p) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(p.name,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 18)),
-              ),
-              IconButton(
-                  onPressed: () => setState(() => _selected = null),
-                  icon: const Icon(Icons.close))
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(p.address),
-          Text(p.contact),
-          Text('Hours: ${p.hours}'),
-          const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlue,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10))),
-              onPressed: () async {
-                if (_currentLoc == null || _selected == null) return;
-
-                final route = await DirectionsService.getRoute(_currentLoc!, _selected!.location);
-
-                if (route.isNotEmpty) {
-                  final bounds = LatLngBounds.fromPoints(route);
-
-                  setState(() {
-                    _routePoints = route;
-                  });
-
-                  // Move to the center of the route and zoom out a bit manually
-                  _mapController.move(bounds.center, 14); // Adjust zoom as needed
-                }
-              },
-              child: const Text('Show Direction'),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  /* --------------- cleanup --------------- */
+Widget _detailPanel(Pharmacy p) {
+  return Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        /* --- Header --- */
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                p.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.lightBlue,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => setState(() => _selected = null),
+            )
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        /* --- Info Card --- */
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _detailRow(Icons.location_on, p.address),
+                const SizedBox(height: 8),
+                _detailRow(Icons.phone, p.contact),
+                const SizedBox(height: 8),
+                _detailRow(Icons.access_time, 'Hours: ${p.hours}'),
+              ],
+            ),
+          ),
+        ),
+
+        const Spacer(),
+
+        /* --- Show Directions Button --- */
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.directions, size: 20),
+            label: const Text('Show Directions'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.lightBlue,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              if (_currentLoc == null || _selected == null) return;
+              final route = await DirectionsService.getRoute(_currentLoc!, _selected!.location);
+              if (route.isNotEmpty) {
+                final bounds = LatLngBounds.fromPoints(route);
+                setState(() {
+                  _routePoints = route;
+                });
+                _mapController.move(bounds.center, 14);
+              }
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _detailRow(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Colors.lightBlue, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
-    _searchCtrl.dispose();
     super.dispose();
   }
 }

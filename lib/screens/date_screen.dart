@@ -2,9 +2,23 @@ import 'package:flutter/material.dart';
 import '../static/wavy_background.dart';
 import '../static/custom_date_picker.dart';
 import 'home_page.dart';
+import '../storage/medicine_plan_storage.dart'; // add this
+import '../models/medicine.dart';
 
 class DateScreen extends StatefulWidget {
-  const DateScreen({super.key});
+  final Medicine selectedMedicine;
+  final String frequency;
+  final String reminderDesc;
+  final List<String> intakeTimes;
+
+  const DateScreen({
+    super.key,
+    required this.selectedMedicine,
+    required this.frequency,
+    required this.reminderDesc,
+    required this.intakeTimes,
+  });
+
   @override
   _DateScreenState createState() => _DateScreenState();
 }
@@ -18,9 +32,9 @@ class _DateScreenState extends State<DateScreen> {
   Future<void> _selectDate(BuildContext ctx) async {
     final picked = await showCustomDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }
@@ -33,7 +47,6 @@ class _DateScreenState extends State<DateScreen> {
   @override
   Widget build(BuildContext context) {
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    const fullDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -41,8 +54,12 @@ class _DateScreenState extends State<DateScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.blueGrey),
+          icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 0, 0, 0)),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Days",
+          style: TextStyle(color: Colors.black),
         ),
       ),
       body: Stack(
@@ -56,32 +73,37 @@ class _DateScreenState extends State<DateScreen> {
                 children: [
                   const Center(
                     child: Text(
-                      'Choose Specific Days',
+                      'Select Intake Days',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.blueGrey,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: List.generate(7, (i) {
                       return GestureDetector(
                         onTap: () => _toggleDay(i),
-                        child: Container(
-                          width: 36,
-                          height: 36,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          width: 44,
+                          height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
                             color: _selectedDays[i] ? Colors.blueGrey : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.blueGrey),
+                            boxShadow: _selectedDays[i]
+                                ? [BoxShadow(color: Colors.blueGrey.shade100, blurRadius: 6, offset: const Offset(0, 2))]
+                                : [],
                           ),
                           child: Text(
                             dayLabels[i],
                             style: TextStyle(
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: _selectedDays[i] ? Colors.white : Colors.blueGrey,
                             ),
@@ -90,42 +112,49 @@ class _DateScreenState extends State<DateScreen> {
                       );
                     }),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _getSelectedDaysString(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.blueGrey,
-                      fontSize: 16,
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      _getSelectedDaysString().isEmpty ? 'No days selected' : _getSelectedDaysString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.blueGrey,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
                   GestureDetector(
                     onTap: () => _selectDate(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.blueGrey),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 3)),
+                        ],
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          const Icon(Icons.calendar_today, color: Colors.blueGrey),
+                          const SizedBox(width: 12),
                           const Text(
-                            'Start Date',
+                            'Start Date:',
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               fontSize: 16,
                               color: Colors.blueGrey,
                             ),
                           ),
+                          const Spacer(),
                           Text(
-                            '${_selectedDate.month}/${_selectedDate.day}',
+                            '${_selectedDate.month}/${_selectedDate.day}/${_selectedDate.year}',
                             style: const TextStyle(
                               fontSize: 16,
-                              color: Colors.blueGrey,
                               fontWeight: FontWeight.bold,
+                              color: Colors.blueGrey,
                             ),
                           ),
                         ],
@@ -137,20 +166,34 @@ class _DateScreenState extends State<DateScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueGrey,
-                        minimumSize: const Size(160, 40),
+                        backgroundColor: const Color(0xFF4DB1E3),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(50),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 5,
                       ),
-                      onPressed: () => Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => HomePage()),
-                        (route) => false,
-                      ),
-                      child: const Text('Done',
+                      onPressed: () async {
+                        await MedicinePlanStorage.savePlan(
+                          medicineName: widget.selectedMedicine.name,
+                          medType: widget.selectedMedicine.medtype,
+                          frequency: widget.frequency,
+                          reminderDesc: widget.reminderDesc,
+                          intakeTimes: widget.intakeTimes,
+                          intakeDays: _selectedDays,
+                          startDate: _selectedDate.toIso8601String().split('T').first,
+                        );
+
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HomePage()),
+                          (route) => false,
+                        );
+                      },
+                      child: const Text(
+                        'Done',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),

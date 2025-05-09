@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../static/wavy_background.dart';
 import '../static/app_sidebar.dart';
-import '../services/gemini_service.dart'; // make sure the path is correct
+import '../services/gemini_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -15,25 +15,23 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
 
   void _sendMessage(String text, {String sender = 'User'}) async {
-  if (text.trim().isEmpty) return;
-  setState(() {
-    _messages.add('$sender: $text');
-  });
+    if (text.trim().isEmpty) return;
 
-  final response = await GeminiService.getGeminiResponse(text);
+    setState(() => _messages.add('$sender: $text'));
 
-  setState(() {
-    _messages.add('Synciee: $response');
-  });
+    final response = await GeminiService.getGeminiResponse(text);
 
-  Future.delayed(Duration(milliseconds: 100), () {
-    _scrollController.animateTo(
-      0.0,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
-  });
-}
+    setState(() => _messages.add('Synciee: $response'));
+
+    // Scroll to bottom after short delay
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,74 +58,99 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Column(
                 children: [
                   Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        reverse: true, // 👈 Messages appear from bottom
-                        itemCount: _messages.length,
-                        itemBuilder: (_, i) {
-                          final reversedIndex = _messages.length - 1 - i;
-                          final message = _messages[reversedIndex];
-                          final isBot = message.startsWith('Synciee:');
-                          final displayText = message.replaceFirst('Synciee: ', '').replaceFirst('User: ', '');
-                          return Align(
-                            alignment: isBot ? Alignment.centerLeft : Alignment.centerRight,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                              decoration: BoxDecoration(
-                                color: isBot ? Colors.indigo.shade100 : Colors.indigo.shade400,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(16),
-                                  topRight: const Radius.circular(16),
-                                  bottomLeft: Radius.circular(isBot ? 0 : 16),
-                                  bottomRight: Radius.circular(isBot ? 16 : 0),
-                                ),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      reverse: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      itemCount: _messages.length,
+                      itemBuilder: (_, i) {
+                        final reversedIndex = _messages.length - 1 - i;
+                        final message = _messages[reversedIndex];
+                        final isBot = message.startsWith('Synciee:');
+                        final displayText = message.replaceFirst(RegExp(r'^(Synciee|User):\s*'), '');
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          alignment: isBot ? Alignment.centerLeft : Alignment.centerRight,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                            decoration: BoxDecoration(
+                              color: isBot ? Colors.white : Colors.indigo.shade600,
+                              borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(18),
+                                topRight: const Radius.circular(18),
+                                bottomLeft: Radius.circular(isBot ? 0 : 18),
+                                bottomRight: Radius.circular(isBot ? 18 : 0),
                               ),
-                              child: Text(
-                                displayText,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: isBot ? Colors.black87 : Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(2, 2),
                                 ),
+                              ],
+                            ),
+                            child: Text(
+                              displayText,
+                              style: TextStyle(
+                                color: isBot ? Colors.black87 : Colors.white,
+                                fontSize: 15.5,
+                                height: 1.4,
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: TextField(
-                      controller: _inputController,
-                      decoration: InputDecoration(
-                        hintText: 'Ask Synciee',
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.indigo.shade900, width: 3),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 12,
+                          offset: const Offset(0, -4),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.indigo.shade900, width: 3),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _inputController,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) {
+                              _sendMessage(_inputController.text);
+                              _inputController.clear();
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'Ask Synciee...',
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.indigo.shade900, width: 3),
+                        const SizedBox(width: 10),
+                        CircleAvatar(
+                          backgroundColor: Colors.indigo,
+                          child: IconButton(
+                            icon: const Icon(Icons.send, color: Colors.white),
+                            onPressed: () {
+                              _sendMessage(_inputController.text);
+                              _inputController.clear();
+                            },
+                          ),
                         ),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.send, color: Colors.indigo),
-                          onPressed: () {
-                            _sendMessage(_inputController.text);
-                            _inputController.clear();
-                          },
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
