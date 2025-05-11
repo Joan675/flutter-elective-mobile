@@ -173,15 +173,25 @@ class _FrequencyScreenState extends State<FrequencyScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 5,
                     ),
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => AlarmScreen(
-                            selectedMedicine: widget.selectedMedicine,
-                            frequency: _selectedFrequency!,
-                            reminderDesc: _reminderDescriptionController.text,
-                          )
-                        )
-                      );
-                    },
+onPressed: () async {
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => AlarmScreen(
+        selectedMedicine: widget.selectedMedicine,
+        frequency: _selectedFrequency!,
+        reminderDesc: _reminderDescriptionController.text,
+      ),
+    ),
+  );
+
+  if (result != null && mounted) {
+    setState(() {
+      _selectedFrequency = result['frequency'] ?? _selectedFrequency;
+      _reminderDescriptionController.text = result['reminderDesc'] ?? _reminderDescriptionController.text;
+    });
+  }
+},
                     child: const Text(
                       'Next',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),

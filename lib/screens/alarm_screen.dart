@@ -171,7 +171,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
               int hour = int.parse(_hourControllers[i].text);
               if (newValue == 'PM' && hour < 12) hour += 12;
               if (newValue == 'AM' && hour == 12) hour = 0;
-              _intakeTimes[i] = (_intakeTimes[i] ?? TimeOfDay.now()).replacing(hour: hour);
+              int minute = int.tryParse(_minuteControllers[i].text) ?? 0;
+              _intakeTimes[i] = TimeOfDay(hour: hour, minute: minute);
+
             });
           }
         },
@@ -186,12 +188,29 @@ class _AlarmScreenState extends State<AlarmScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => FrequencyScreen(
-              selectedMedicine: widget.selectedMedicine,
-              ),
-            ),
-          ),
+onPressed: () {
+  final formattedTimes = List<String>.generate(_intakeTimes.length, (i) {
+    if (_intakeTimes[i] != null) {
+      return _intakeTimes[i]!.format(context);
+    }
+
+    int hour = int.tryParse(_hourControllers[i].text) ?? 8;
+    int minute = int.tryParse(_minuteControllers[i].text) ?? 0;
+    String ampm = _ampmValues[i];
+    if (ampm == 'PM' && hour < 12) hour += 12;
+    if (ampm == 'AM' && hour == 12) hour = 0;
+
+    return TimeOfDay(hour: hour, minute: minute).format(context);
+  });
+
+  Navigator.pop(context, {
+    'frequency': widget.frequency,
+    'reminderDesc': widget.reminderDesc,
+    'intakeTimes': formattedTimes,
+  });
+},
+
+
         ),
         title: const Text('Intake Time'),
         backgroundColor: Colors.transparent,
@@ -222,38 +241,59 @@ class _AlarmScreenState extends State<AlarmScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         elevation: 5,
                       ),
-                      onPressed: () {
-                        final formattedTimes = List<String>.generate(_intakeTimes.length, (i) {
-                          // If time was selected via picker, use it
-                          if (_intakeTimes[i] != null) {
-                            return _intakeTimes[i]!.format(context);
-                          }
+                     onPressed: () async {
+  final formattedTimes = List<String>.generate(_intakeTimes.length, (i) {
+    if (_intakeTimes[i] != null) {
+      return _intakeTimes[i]!.format(context);
+    }
 
-                          // Otherwise, parse manually from text fields + AM/PM
-                          int hour = int.tryParse(_hourControllers[i].text) ?? 8;
-                          int minute = int.tryParse(_minuteControllers[i].text) ?? 0;
-                          String ampm = _ampmValues[i];
+    int hour = int.tryParse(_hourControllers[i].text) ?? 8;
+    int minute = int.tryParse(_minuteControllers[i].text) ?? 0;
+    String ampm = _ampmValues[i];
 
-                          // Convert to 24-hour format
-                          if (ampm == 'PM' && hour < 12) hour += 12;
-                          if (ampm == 'AM' && hour == 12) hour = 0;
+    if (ampm == 'PM' && hour < 12) hour += 12;
+    if (ampm == 'AM' && hour == 12) hour = 0;
 
-                          final fallback = TimeOfDay(hour: hour, minute: minute);
-                          return fallback.format(context);
-                        });
+    final fallback = TimeOfDay(hour: hour, minute: minute);
+    return fallback.format(context);
+  });
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => DateScreen(
-                              selectedMedicine: widget.selectedMedicine,
-                              frequency: widget.frequency,
-                              reminderDesc: widget.reminderDesc,
-                              intakeTimes: formattedTimes, // 👈 ensures all times are filled
-                            ),
-                          ),
-                        );
-                      },
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => DateScreen(
+        selectedMedicine: widget.selectedMedicine,
+        frequency: widget.frequency,
+        reminderDesc: widget.reminderDesc,
+        intakeTimes: formattedTimes,
+      ),
+    ),
+  );
+
+  // ✅ If user navigates back, rehydrate intake times
+  if (result != null && mounted) {
+    setState(() {
+      if (result['intakeTimes'] != null) {
+        final intakeList = List<String>.from(result['intakeTimes']);
+        for (int i = 0; i < intakeList.length; i++) {
+          final split = intakeList[i].split(RegExp(r'[: ]'));
+          int hour = int.parse(split[0]);
+          int minute = int.parse(split[1]);
+          String ampm = split[2];
+
+          if (ampm == 'PM' && hour < 12) hour += 12;
+          if (ampm == 'AM' && hour == 12) hour = 0;
+
+          final time = TimeOfDay(hour: hour, minute: minute);
+          _intakeTimes[i] = time;
+          _hourControllers[i].text = time.hourOfPeriod.toString().padLeft(2, '0');
+          _minuteControllers[i].text = time.minute.toString().padLeft(2, '0');
+          _ampmValues[i] = time.period == DayPeriod.am ? 'AM' : 'PM';
+        }
+      }
+    });
+  }
+},
                       child: const Text(
                         'Next',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
