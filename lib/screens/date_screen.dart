@@ -27,7 +27,8 @@ class _DateScreenState extends State<DateScreen> {
   final List<bool> _selectedDays = List.filled(7, false);
   DateTime _selectedDate = DateTime.now();
 
-  void _toggleDay(int i) => setState(() => _selectedDays[i] = !_selectedDays[i]);
+  void _toggleDay(int i) =>
+      setState(() => _selectedDays[i] = !_selectedDays[i]);
 
   Future<void> _selectDate(BuildContext ctx) async {
     final picked = await showCustomDatePicker(
@@ -41,7 +42,10 @@ class _DateScreenState extends State<DateScreen> {
 
   String _getSelectedDaysString() {
     const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
-    return [for (int i = 0; i < 7; i++) if (_selectedDays[i]) names[i]].join(', ');
+    return [
+      for (int i = 0; i < 7; i++)
+        if (_selectedDays[i]) names[i],
+    ].join(', ');
   }
 
   @override
@@ -54,20 +58,19 @@ class _DateScreenState extends State<DateScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 0, 0, 0)),
-onPressed: () {
-  Navigator.pop(context, {
-    'frequency': widget.frequency,
-    'reminderDesc': widget.reminderDesc,
-    'intakeTimes': widget.intakeTimes,
-  });
-},
-
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Color.fromARGB(255, 0, 0, 0),
+          ),
+          onPressed: () {
+            Navigator.pop(context, {
+              'frequency': widget.frequency,
+              'reminderDesc': widget.reminderDesc,
+              'intakeTimes': widget.intakeTimes,
+            });
+          },
         ),
-        title: const Text(
-          "Days",
-          style: TextStyle(color: Colors.black),
-        ),
+        title: const Text("Days", style: TextStyle(color: Colors.black)),
       ),
       body: Stack(
         children: [
@@ -100,19 +103,32 @@ onPressed: () {
                           height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: _selectedDays[i] ? Colors.blueGrey : Colors.white,
+                            color:
+                                _selectedDays[i]
+                                    ? Colors.blueGrey
+                                    : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.blueGrey),
-                            boxShadow: _selectedDays[i]
-                                ? [BoxShadow(color: Colors.blueGrey.shade100, blurRadius: 6, offset: const Offset(0, 2))]
-                                : [],
+                            boxShadow:
+                                _selectedDays[i]
+                                    ? [
+                                      BoxShadow(
+                                        color: Colors.blueGrey.shade100,
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                    : [],
                           ),
                           child: Text(
                             dayLabels[i],
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: _selectedDays[i] ? Colors.white : Colors.blueGrey,
+                              color:
+                                  _selectedDays[i]
+                                      ? Colors.white
+                                      : Colors.blueGrey,
                             ),
                           ),
                         ),
@@ -122,7 +138,9 @@ onPressed: () {
                   const SizedBox(height: 16),
                   Center(
                     child: Text(
-                      _getSelectedDaysString().isEmpty ? 'No days selected' : _getSelectedDaysString(),
+                      _getSelectedDaysString().isEmpty
+                          ? 'No days selected'
+                          : _getSelectedDaysString(),
                       style: const TextStyle(
                         fontWeight: FontWeight.w500,
                         color: Colors.blueGrey,
@@ -134,18 +152,28 @@ onPressed: () {
                   GestureDetector(
                     onTap: () => _selectDate(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 18,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.blueGrey),
                         boxShadow: [
-                          BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 3)),
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
                         ],
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, color: Colors.blueGrey),
+                          const Icon(
+                            Icons.calendar_today,
+                            color: Colors.blueGrey,
+                          ),
                           const SizedBox(width: 12),
                           const Text(
                             'Start Date:',
@@ -188,7 +216,8 @@ onPressed: () {
                           reminderDesc: widget.reminderDesc,
                           intakeTimes: widget.intakeTimes,
                           intakeDays: _selectedDays,
-                          startDate: _selectedDate.toIso8601String().split('T').first,
+                          startDate:
+                              _selectedDate.toIso8601String().split('T').first,
                         );
 
                         Navigator.pushAndRemoveUntil(
