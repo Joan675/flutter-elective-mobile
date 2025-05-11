@@ -55,7 +55,14 @@ class _DateScreenState extends State<DateScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 0, 0, 0)),
-          onPressed: () => Navigator.pop(context),
+onPressed: () {
+  Navigator.pop(context, {
+    'frequency': widget.frequency,
+    'reminderDesc': widget.reminderDesc,
+    'intakeTimes': widget.intakeTimes,
+  });
+},
+
         ),
         title: const Text(
           "Days",
