@@ -44,6 +44,7 @@ class _MapScreenState extends State<MapScreen> {
   List<LatLng> _routePoints = [];
   Pharmacy? _selected;
   bool _followUser = true;
+  bool _mapReady = false;
 
   final Distance _distance = const Distance();
 
@@ -51,7 +52,12 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _pharmacies = List.from(samplePharmacies);
-    _startListeningToLocationChanges();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _mapReady = true;
+      });
+      _startListeningToLocationChanges();
+    });
   }
 
   StreamSubscription<Position>? _positionStream;
@@ -78,7 +84,7 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _currentLoc = newLoc;
         _sortNearest();
-        if (_followUser) {
+        if (_followUser && _mapReady) {
           _mapController.move(
             _offsetLatLng(newLoc),
             _mapController.camera.zoom,
@@ -121,7 +127,7 @@ class _MapScreenState extends State<MapScreen> {
 
     // Calculate vertical offset based on screen size
     final screenHeight = MediaQuery.of(context).size.height;
-    final verticalOffset = screenHeight < 700 ? 0.002 : 0.0035;
+    final verticalOffset = screenHeight < 700 ? -0.002 : -0.0035;
 
     final offsetCenter = LatLng(
       center.latitude + verticalOffset, // move up (north)
@@ -196,15 +202,12 @@ class _MapScreenState extends State<MapScreen> {
                               setState(() {
                                 _followUser = true;
                               });
-                              _mapController.move(
-                                _offsetLatLng(_currentLoc!),
-                                _mapController.camera.zoom,
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Following your location"),
-                                ),
-                              );
+                              if (_mapReady) {
+                                _mapController.move(
+                                  _offsetLatLng(_currentLoc!),
+                                  _mapController.camera.zoom,
+                                );
+                              }
                             },
                             child: const Icon(
                               Icons.my_location,
@@ -223,10 +226,12 @@ class _MapScreenState extends State<MapScreen> {
                               onTap: () {
                                 setState(() => _selected = p);
                                 _panelController.open();
-                                _mapController.move(
-                                  _offsetLatLng(p.location),
-                                  _mapController.camera.zoom,
-                                );
+                                if (_mapReady) {
+                                  _mapController.move(
+                                    _offsetLatLng(p.location),
+                                    _mapController.camera.zoom,
+                                  );
+                                }
                               },
                               child: const Icon(
                                 Icons.location_on,
@@ -314,10 +319,12 @@ class _MapScreenState extends State<MapScreen> {
                               _followUser = false;
                             });
                             _panelController.open();
-                            _mapController.move(
-                              _offsetLatLng(p.location),
-                              _mapController.camera.zoom,
-                            );
+                            if (_mapReady) {
+                              _mapController.move(
+                                _offsetLatLng(p.location),
+                                _mapController.camera.zoom,
+                              );
+                            }
                           },
                         ),
                       );

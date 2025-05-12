@@ -5,7 +5,6 @@ import '../services/gemini_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
   @override
@@ -18,53 +17,57 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isSyncieeTyping = false;
 
-void _sendMessage(String text, {String sender = 'User'}) async {
-  if (text.trim().isEmpty) return;
-
-  final isFirstUserMessage = _messages.where((m) => m.startsWith('User:')).isEmpty;
-
-  setState(() {
-    _messages.add('$sender: $text');
-    if (_messages.length > 10) _messages.removeAt(0);
-    _isSyncieeTyping = true;
-    _messages.add('Synciee: ...typing...');
-  });
-  await _saveMessages();
-
-  try {
-    final memory = isFirstUserMessage ? List<String>.from(_messages) : null;
-    final response = await GeminiService.getGeminiResponse(text, memory: memory);
+  void _sendMessage(String text, {String sender = 'User'}) async {
+    if (text.trim().isEmpty) return;
 
     setState(() {
-      _messages.removeLast(); // Remove typing placeholder
-      _messages.add('Synciee: $response');
+      _messages.add('$sender: $text');
       if (_messages.length > 10) _messages.removeAt(0);
-      _isSyncieeTyping = false;
+      _isSyncieeTyping = true;
+      _messages.add('Synciee: ...typing...');
     });
-  } catch (e) {
-    setState(() {
-      _messages.removeLast(); // Remove typing placeholder
-      _messages.add("Synciee: Oops! Something went wrong while trying to respond. Can you try again in a moment?");
-      _isSyncieeTyping = false;
+    await _saveMessages();
+
+    try {
+      final memory =
+          _messages.where((m) => !m.contains('...typing...')).take(10).toList();
+
+      final response = await GeminiService.getGeminiResponse(
+        text,
+        memory: memory,
+      );
+
+      setState(() {
+        _messages.removeLast();
+        _messages.add('Synciee: $response');
+        if (_messages.length > 10) _messages.removeAt(0);
+        _isSyncieeTyping = false;
+      });
+    } catch (e) {
+      setState(() {
+        _messages.removeLast();
+        _messages.add(
+          "Synciee: Oops! Something went wrong while trying to respond. Can you try again in a moment?",
+        );
+        _isSyncieeTyping = false;
+      });
+    }
+
+    await _saveMessages();
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      final position = _scrollController.position;
+      final isUserAtBottom = position.pixels >= position.maxScrollExtent - 100;
+
+      if (isUserAtBottom) {
+        _scrollController.animateTo(
+          position.maxScrollExtent,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
-
-  await _saveMessages();
-
-  Future.delayed(const Duration(milliseconds: 300), () {
-    final position = _scrollController.position;
-    final isUserAtBottom = position.pixels >= position.maxScrollExtent - 100;
-
-    if (isUserAtBottom) {
-      _scrollController.animateTo(
-        position.maxScrollExtent,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOut,
-      );
-    }
-  });
-}
-
 
   Future<void> _loadMessages() async {
     final prefs = await SharedPreferences.getInstance();
@@ -95,10 +98,11 @@ void _sendMessage(String text, {String sender = 'User'}) async {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
       ),
       body: GestureDetector(
@@ -113,79 +117,120 @@ void _sendMessage(String text, {String sender = 'User'}) async {
                     child: ListView.builder(
                       controller: _scrollController,
                       reverse: true,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       itemCount: _messages.length,
                       itemBuilder: (_, i) {
                         final reversedIndex = _messages.length - 1 - i;
                         final message = _messages[reversedIndex];
                         final isBot = message.startsWith('Synciee:');
                         final isTyping = message == 'Synciee: ...typing...';
-                        final displayText = isTyping ? '' : message.replaceFirst(RegExp(r'^(Synciee|User):\s*'), '');
-                              return AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        alignment: isBot ? Alignment.centerLeft : Alignment.centerRight,
-        child: isTyping
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(width: 4),
+                        final displayText =
+                            isTyping
+                                ? ''
+                                : message.replaceFirst(
+                                  RegExp(r'^(Synciee|User):\s*'),
+                                  '',
+                                );
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          alignment:
+                              isBot
+                                  ? Alignment.centerLeft
+                                  : Alignment.centerRight,
+                          child:
+                              isTyping
+                                  ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        child: const SizedBox(
+                                          height: 12,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _Dot(),
+                                              SizedBox(width: 4),
+                                              _Dot(delay: 200),
+                                              SizedBox(width: 4),
+                                              _Dot(delay: 400),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                  : Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    constraints: BoxConstraints(
+                                      maxWidth:
+                                          MediaQuery.of(context).size.width *
+                                          0.75,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          isBot
+                                              ? Colors.white
+                                              : Colors.indigo.shade600,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: const Radius.circular(18),
+                                        topRight: const Radius.circular(18),
+                                        bottomLeft: Radius.circular(
+                                          isBot ? 0 : 18,
+                                        ),
+                                        bottomRight: Radius.circular(
+                                          isBot ? 18 : 0,
+                                        ),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 6,
+                                          offset: const Offset(2, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Text(
+                                      displayText,
+                                      style: TextStyle(
+                                        color:
+                                            isBot
+                                                ? Colors.black87
+                                                : Colors.white,
+                                        fontSize: 15.5,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                        );
+                      },
+                    ),
+                  ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
                     ),
-                    child: const SizedBox(
-                      height: 12,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _Dot(),
-                          SizedBox(width: 4),
-                          _Dot(delay: 200),
-                          SizedBox(width: 4),
-                          _Dot(delay: 400),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Container(
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                decoration: BoxDecoration(
-                  color: isBot ? Colors.white : Colors.indigo.shade600,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(18),
-                    topRight: const Radius.circular(18),
-                    bottomLeft: Radius.circular(isBot ? 0 : 18),
-                    bottomRight: Radius.circular(isBot ? 18 : 0),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 6,
-                      offset: const Offset(2, 2),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  displayText,
-                  style: TextStyle(
-                    color: isBot ? Colors.black87 : Colors.white,
-                    fontSize: 15.5,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-      );                      },
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       boxShadow: [
@@ -208,7 +253,10 @@ void _sendMessage(String text, {String sender = 'User'}) async {
                             },
                             decoration: InputDecoration(
                               hintText: 'Ask Synciee...',
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
                               filled: true,
                               fillColor: Colors.grey[100],
                               border: OutlineInputBorder(
@@ -240,8 +288,8 @@ void _sendMessage(String text, {String sender = 'User'}) async {
       ),
     );
   }
-  
 }
+
 class _Dot extends StatefulWidget {
   final int delay;
   const _Dot({this.delay = 0});
@@ -254,15 +302,14 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
-@override
-void initState() {
-  super.initState();
-  _controller = AnimationController(
-    duration: const Duration(milliseconds: 900),
-    vsync: this,
-  )..repeat(reverse: true);
-}
-
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 900),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -271,10 +318,10 @@ void initState() {
     }
 
     return FadeTransition(
-      opacity: Tween<double>(begin: 0.3, end: 1.0).animate(CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      )),
+      opacity: Tween<double>(
+        begin: 0.3,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
       child: Container(
         width: 6,
         height: 6,
