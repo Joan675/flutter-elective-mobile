@@ -11,10 +11,13 @@ class ChatScreen extends StatefulWidget {
   _ChatScreenState createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin{
   final List<String> _messages = [];
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  late AnimationController _suggestionsController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
   bool _isSyncieeTyping = false;
 
   void _sendMessage(String text, {String sender = 'User'}) async {
@@ -93,11 +96,29 @@ final List<String> _predefinedMessages = [
 ];
 
 
-  @override
-  void initState() {
-    super.initState();
-    _loadMessages();
-  }
+@override
+void initState() {
+  super.initState();
+  _loadMessages();
+
+  _suggestionsController = AnimationController(
+    duration: const Duration(milliseconds: 250),
+    vsync: this,
+  );
+
+  _fadeAnimation = CurvedAnimation(
+    parent: _suggestionsController,
+    curve: Curves.easeInOut,
+  );
+
+  _slideAnimation = Tween<Offset>(
+    begin: const Offset(0, 0.1),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(
+    parent: _suggestionsController,
+    curve: Curves.easeOut,
+  ));
+}
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +138,16 @@ final List<String> _predefinedMessages = [
         ),
       ),
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
+        onTap: () {
+  FocusScope.of(context).unfocus();
+  if (_showSuggestions) {
+    setState(() {
+      _showSuggestions = false;
+      _suggestionsController.reverse();
+    });
+  }
+},
+
         child: LayoutBuilder(
           builder: (context, constraints) {
             final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
@@ -229,17 +259,17 @@ final List<String> _predefinedMessages = [
                                             ),
                                           ],
                                         ),
-                                        child: Text(
-                                          displayText,
-                                          style: TextStyle(
-                                            color:
-                                                isBot
-                                                    ? Colors.black87
-                                                    : Colors.white,
-                                            fontSize: 15.5,
-                                            height: 1.4,
-                                          ),
-                                        ),
+child: RichText(
+  text: parseFormattedText(
+    displayText,
+    baseStyle: TextStyle(
+      color: isBot ? Colors.black87 : Colors.white,
+      fontSize: 15.5,
+      height: 1.4,
+    ),
+  ),
+),
+
                                       ),
                             );
                           },
@@ -307,51 +337,64 @@ final List<String> _predefinedMessages = [
                 ),
 
                 // ✅ Keyboard-aware floating button
-// FAB + Floating List
 Positioned(
   bottom: keyboardHeight + 100,
   right: 20,
   child: Column(
     crossAxisAlignment: CrossAxisAlignment.end,
     children: [
-      if (_showSuggestions)
-        Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 8,
-                offset: const Offset(2, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: _predefinedMessages.map((msg) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() => _showSuggestions = false);
-                  _sendMessage(msg);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                  child: Text(
-                    msg,
-                    style: const TextStyle(fontSize: 13.5),
-                  ),
+      SizeTransition(
+        sizeFactor: _fadeAnimation,
+        axisAlignment: -1.0,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: const Offset(2, 2),
                 ),
-              );
-            }).toList(),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _predefinedMessages.map((msg) {
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _showSuggestions = false);
+                    _suggestionsController.reverse();
+                    _sendMessage(msg);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                    child: Text(
+                      msg,
+                      style: const TextStyle(fontSize: 13.5),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         ),
+      ),
       FloatingActionButton(
         heroTag: 'predefined-messages',
         onPressed: () {
-          setState(() => _showSuggestions = !_showSuggestions);
+          setState(() {
+            _showSuggestions = !_showSuggestions;
+            if (_showSuggestions) {
+              _suggestionsController.forward();
+            } else {
+              _suggestionsController.reverse();
+            }
+          });
         },
         backgroundColor: Colors.indigo.shade300,
         mini: true,
@@ -368,6 +411,14 @@ Positioned(
       ),
     );
   }
+  @override
+void dispose() {
+  _suggestionsController.dispose();
+  _scrollController.dispose();
+  _inputController.dispose();
+  super.dispose();
+}
+
 }
 
 class _Dot extends StatefulWidget {
@@ -418,4 +469,26 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
     _controller.dispose();
     super.dispose();
   }
+}
+TextSpan parseFormattedText(String input, {TextStyle? baseStyle}) {
+  final List<InlineSpan> spans = [];
+  final RegExp exp = RegExp(r'(\*\*.*?\*\*|_.*?_|[^*_]+)', dotAll: true);
+  final matches = exp.allMatches(input);
+
+  for (final match in matches) {
+    String part = match.group(0)!;
+    TextStyle style = baseStyle ?? const TextStyle();
+
+    if (part.startsWith('**') && part.endsWith('**')) {
+      part = part.substring(2, part.length - 2);
+      style = style.copyWith(fontWeight: FontWeight.bold);
+    } else if (part.startsWith('_') && part.endsWith('_')) {
+      part = part.substring(1, part.length - 1);
+      style = style.copyWith(fontStyle: FontStyle.italic);
+    }
+
+    spans.add(TextSpan(text: part, style: style));
+  }
+
+  return TextSpan(children: spans);
 }
