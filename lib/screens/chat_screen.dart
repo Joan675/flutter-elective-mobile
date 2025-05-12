@@ -82,6 +82,17 @@ class _ChatScreenState extends State<ChatScreen> {
     await prefs.setStringList('chat_messages', _messages);
   }
 
+bool _showSuggestions = false;
+
+final List<String> _predefinedMessages = [
+  "What are common side effects of Paracetamol?",
+  "How often should I take my medication?",
+  "Can I take ibuprofen on an empty stomach?",
+  "What should I do if I miss a dose?",
+  "Are there foods I should avoid with antibiotics?"
+];
+
+
   @override
   void initState() {
     super.initState();
@@ -107,183 +118,252 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
-        child: Stack(
-          children: [
-            const WavyBackground(),
-            SafeArea(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      reverse: true,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      itemCount: _messages.length,
-                      itemBuilder: (_, i) {
-                        final reversedIndex = _messages.length - 1 - i;
-                        final message = _messages[reversedIndex];
-                        final isBot = message.startsWith('Synciee:');
-                        final isTyping = message == 'Synciee: ...typing...';
-                        final displayText =
-                            isTyping
-                                ? ''
-                                : message.replaceFirst(
-                                  RegExp(r'^(Synciee|User):\s*'),
-                                  '',
-                                );
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          alignment:
-                              isBot
-                                  ? Alignment.centerLeft
-                                  : Alignment.centerRight,
-                          child:
-                              isTyping
-                                  ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const SizedBox(width: 4),
-                                      Container(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+            return Stack(
+              children: [
+                const WavyBackground(),
+                SafeArea(
+                  child: Column(
+                    children: [
+                      // ✅ This is your existing Expanded message list + input bar
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          reverse: true,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          itemCount: _messages.length,
+                          itemBuilder: (_, i) {
+                            final reversedIndex = _messages.length - 1 - i;
+                            final message = _messages[reversedIndex];
+                            final isBot = message.startsWith('Synciee:');
+                            final isTyping = message == 'Synciee: ...typing...';
+                            final displayText =
+                                isTyping
+                                    ? ''
+                                    : message.replaceFirst(
+                                      RegExp(r'^(Synciee|User):\s*'),
+                                      '',
+                                    );
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              alignment:
+                                  isBot
+                                      ? Alignment.centerLeft
+                                      : Alignment.centerRight,
+                              child:
+                                  isTyping
+                                      ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const SizedBox(width: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: const SizedBox(
+                                              height: 12,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  _Dot(),
+                                                  SizedBox(width: 4),
+                                                  _Dot(delay: 200),
+                                                  SizedBox(width: 4),
+                                                  _Dot(delay: 400),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                      : Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 6,
+                                        ),
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 10,
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        constraints: BoxConstraints(
+                                          maxWidth:
+                                              MediaQuery.of(
+                                                context,
+                                              ).size.width *
+                                              0.75,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            20,
+                                          color:
+                                              isBot
+                                                  ? Colors.white
+                                                  : Colors.indigo.shade600,
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: const Radius.circular(18),
+                                            topRight: const Radius.circular(18),
+                                            bottomLeft: Radius.circular(
+                                              isBot ? 0 : 18,
+                                            ),
+                                            bottomRight: Radius.circular(
+                                              isBot ? 18 : 0,
+                                            ),
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.05,
+                                              ),
+                                              blurRadius: 6,
+                                              offset: const Offset(2, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Text(
+                                          displayText,
+                                          style: TextStyle(
+                                            color:
+                                                isBot
+                                                    ? Colors.black87
+                                                    : Colors.white,
+                                            fontSize: 15.5,
+                                            height: 1.4,
                                           ),
                                         ),
-                                        child: const SizedBox(
-                                          height: 12,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              _Dot(),
-                                              SizedBox(width: 4),
-                                              _Dot(delay: 200),
-                                              SizedBox(width: 4),
-                                              _Dot(delay: 400),
-                                            ],
-                                          ),
-                                        ),
                                       ),
-                                    ],
-                                  )
-                                  : Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      vertical: 6,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    constraints: BoxConstraints(
-                                      maxWidth:
-                                          MediaQuery.of(context).size.width *
-                                          0.75,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          isBot
-                                              ? Colors.white
-                                              : Colors.indigo.shade600,
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: const Radius.circular(18),
-                                        topRight: const Radius.circular(18),
-                                        bottomLeft: Radius.circular(
-                                          isBot ? 0 : 18,
-                                        ),
-                                        bottomRight: Radius.circular(
-                                          isBot ? 18 : 0,
-                                        ),
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 6,
-                                          offset: const Offset(2, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Text(
-                                      displayText,
-                                      style: TextStyle(
-                                        color:
-                                            isBot
-                                                ? Colors.black87
-                                                : Colors.white,
-                                        fontSize: 15.5,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ),
-                        );
-                      },
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 12,
-                          offset: const Offset(0, -4),
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _inputController,
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) {
-                              _sendMessage(_inputController.text);
-                              _inputController.clear();
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Ask Synciee...',
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey[100],
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                                borderSide: BorderSide.none,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 12,
+                              offset: const Offset(0, -4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _inputController,
+                                textInputAction: TextInputAction.send,
+                                onSubmitted: (_) {
+                                  _sendMessage(_inputController.text);
+                                  _inputController.clear();
+                                },
+                                decoration: InputDecoration(
+                                  hintText: 'Ask Synciee...',
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[100],
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 10),
+                            CircleAvatar(
+                              backgroundColor: Colors.indigo,
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.send,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () {
+                                  _sendMessage(_inputController.text);
+                                  _inputController.clear();
+                                },
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        CircleAvatar(
-                          backgroundColor: Colors.indigo,
-                          child: IconButton(
-                            icon: const Icon(Icons.send, color: Colors.white),
-                            onPressed: () {
-                              _sendMessage(_inputController.text);
-                              _inputController.clear();
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+
+                // ✅ Keyboard-aware floating button
+// FAB + Floating List
+Positioned(
+  bottom: keyboardHeight + 100,
+  right: 20,
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: [
+      if (_showSuggestions)
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 8,
+                offset: const Offset(2, 2),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: _predefinedMessages.map((msg) {
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _showSuggestions = false);
+                  _sendMessage(msg);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                  child: Text(
+                    msg,
+                    style: const TextStyle(fontSize: 13.5),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      FloatingActionButton(
+        heroTag: 'predefined-messages',
+        onPressed: () {
+          setState(() => _showSuggestions = !_showSuggestions);
+        },
+        backgroundColor: Colors.indigo.shade300,
+        mini: true,
+        child: const Icon(Icons.question_answer, color: Colors.white),
+      ),
+    ],
+  ),
+),
+
+              ],
+            );
+          },
         ),
       ),
     );
